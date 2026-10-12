@@ -1,0 +1,17 @@
+{
+  "id": "nacl",
+  "name": "Sodium Chloride",
+  "formula": "NaCl",
+  "classLevel": [9, 10],
+  "tags": ["Ionic", "Salt", "Electrostatic", "Crystal Unit"],
+  "geometry": "Linear (Ionic Pair)",
+  "notes": "Classic ionic bond formed by complete electron transfer from sodium to chlorine.",
+  "ncertRef": "Class 10 Chapter 3: Metals and Non-metals",
+  "atoms": [
+    { "id": 0, "element": "Na", "position": [-1.18, 0, 0] },
+    { "id": 1, "element": "Cl", "position": [1.18, 0, 0] }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1, "order": 1, "targetLength": 2.36 }
+  ]
+}

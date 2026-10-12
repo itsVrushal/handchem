@@ -1,0 +1,26 @@
+{
+  "id": "nh3",
+  "name": "Ammonia",
+  "formula": "NH₃",
+  "classLevel": [10, 11],
+  "tags": ["Trigonal Pyramidal", "Base", "Lone Pair", "Polar"],
+  "geometry": "Trigonal Pyramidal",
+  "notes": "One lone pair on nitrogen repels the three N-H bonds, reducing the angle to 107.8°.",
+  "ncertRef": "Class 11 Chapter 4: VSEPR Theory and Shapes",
+  "atoms": [
+    { "id": 0, "element": "N", "position": [0, 0, 0.364] },
+    { "id": 1, "element": "H", "position": [0.942, 0, 0] },
+    { "id": 2, "element": "H", "position": [-0.471, 0.816, 0] },
+    { "id": 3, "element": "H", "position": [-0.471, -0.816, 0] }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1, "order": 1, "targetLength": 1.01 },
+    { "a": 0, "b": 2, "order": 1, "targetLength": 1.01 },
+    { "a": 0, "b": 3, "order": 1, "targetLength": 1.01 }
+  ],
+  "angleConstraints": [
+    { "atomA": 1, "centerAtom": 0, "atomB": 2, "targetAngleDeg": 107.8 },
+    { "atomA": 2, "centerAtom": 0, "atomB": 3, "targetAngleDeg": 107.8 },
+    { "atomA": 3, "centerAtom": 0, "atomB": 1, "targetAngleDeg": 107.8 }
+  ]
+}

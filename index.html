@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Molecule Hands – Interactive 3D Chemistry</title>
+    <title>Molecule Hands – Interactive 3D Chemistry (NCERT 9–12)</title>
     <meta
       name="description"
-      content="Explore atoms, molecules and chemical bonds in 3D using just your webcam-tracked hand. Free, private, on-device processing."
+      content="Explore atoms, molecules and chemical bonds in 3D using just your webcam-tracked hand as a virtual mouse. Free, private, on-device processing for NCERT Chemistry."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,6 +18,91 @@
   </head>
   <body>
     <div id="app">
+      <!-- ── Top Header Navigation Bar ─────────────────── -->
+      <header class="app-header" role="banner">
+        <div class="header-brand">
+          <span class="brand-icon" aria-hidden="true">🧬</span>
+          <div class="brand-text">
+            <h1 class="brand-title">Molecule Hands</h1>
+            <span class="brand-badge">NCERT Classes 9–12</span>
+          </div>
+        </div>
+
+        <!-- Molecule Carousel Selector -->
+        <div class="molecule-carousel" role="region" aria-label="Molecule Selector">
+          <button id="mol-prev" class="btn btn-icon btn-carousel" aria-label="Previous Molecule" data-target-id="mol-prev">
+            ◀
+          </button>
+          <div id="mol-title" class="carousel-title" aria-live="polite">
+            Water (H₂O)
+          </div>
+          <button id="mol-next" class="btn btn-icon btn-carousel" aria-label="Next Molecule" data-target-id="mol-next">
+            ▶
+          </button>
+        </div>
+
+        <!-- Quick Action Bar -->
+        <div class="header-actions">
+          <button id="btn-rep-toggle" class="btn btn-action" data-target-id="btn-rep-toggle" title="Switch Ball-and-Stick / Space-Filling">
+            <span class="btn-icon" aria-hidden="true">⚪</span>
+            <span id="rep-label">Ball &amp; Stick</span>
+          </button>
+          <button id="btn-reset-structure" class="btn btn-action" data-target-id="btn-reset-structure" title="Reset Atom Positions">
+            <span class="btn-icon" aria-hidden="true">🔄</span>
+            Reset
+          </button>
+          <button id="toggle-debug" class="btn btn-action" data-target-id="toggle-debug" title="Toggle Telemetry Panel (D)">
+            <span class="btn-icon" aria-hidden="true">🛠️</span>
+            Debug
+          </button>
+        </div>
+      </header>
+
+      <!-- ── Chemistry HUD (Top-Left) ───────────────────── -->
+      <aside id="chem-hud" class="chem-hud" aria-label="Chemical Information">
+        <div class="hud-card">
+          <div class="hud-top-row">
+            <div>
+              <h2 id="hud-name" class="hud-mol-name">Water</h2>
+              <span id="hud-formula" class="hud-formula-badge">H₂O</span>
+            </div>
+            <div class="hud-badges">
+              <span id="hud-mass" class="hud-pill">18.02 g/mol</span>
+              <span id="hud-geometry" class="hud-pill hud-pill-accent">Bent 104.5°</span>
+            </div>
+          </div>
+
+          <div class="hud-ncert-row">
+            <span class="hud-ncert-icon" aria-hidden="true">📖</span>
+            <span id="hud-ncert" class="hud-ncert-text">Class 10 Chapter 4 / Class 11 Chapter 4</span>
+          </div>
+
+          <p id="hud-notes" class="hud-notes">
+            Bent geometry with an angle of 104.5° caused by repulsion from two oxygen lone pairs.
+          </p>
+
+          <!-- Real-time Live Measurements -->
+          <div class="hud-measurements">
+            <div id="hud-bond-readout" class="hud-measurement-box">
+              <span class="hud-label">Bond Length:</span> <span class="hud-value">—</span>
+            </div>
+            <div id="hud-angle-readout" class="hud-measurement-box">
+              <span class="hud-label">Bond Angle:</span> <span class="hud-value">—</span>
+            </div>
+          </div>
+
+          <!-- Potential Energy Well Curve -->
+          <div class="hud-energy-container">
+            <div class="energy-header">
+              <span class="energy-title">Potential Energy V(r)</span>
+              <span class="energy-sub">Harmonic Strain</span>
+            </div>
+            <canvas id="energy-canvas" width="250" height="110" aria-label="Energy vs stretch plot"></canvas>
+            <span class="energy-hint">Pinch &amp; drag an atom to stretch chemical bonds</span>
+          </div>
+        </div>
+      </aside>
+
       <!-- ── Permission Overlay ─────────────────────────── -->
       <div
         id="permission-overlay"
@@ -42,6 +127,11 @@
           <button id="start-btn" class="btn btn-primary btn-large">
             <span class="btn-icon" aria-hidden="true">📷</span>
             Allow Camera &amp; Start
+          </button>
+
+          <button id="skip-to-mouse" class="btn btn-secondary btn-large" style="margin-top: 10px;">
+            <span class="btn-icon" aria-hidden="true">🖱️</span>
+            or try with mouse / touch fallback
           </button>
 
           <p id="start-error" class="overlay-error" hidden></p>
@@ -96,29 +186,6 @@
         <div class="preview-video-container">
           <video id="camera-video" autoplay playsinline muted aria-hidden="true"></video>
           <canvas id="skeleton-canvas" aria-hidden="true"></canvas>
-        </div>
-      </div>
-
-      <!-- ── HUD: Gesture Test Buttons ─────────────────── -->
-      <div id="hud-panel" class="hud-panel" hidden>
-        <p class="hud-title">Gesture Test</p>
-
-        <button id="btn-pinch" class="btn btn-gesture" data-target-id="btn-pinch">
-          <span class="btn-icon" aria-hidden="true">🤌</span>
-          Pinch Click
-        </button>
-
-        <button id="btn-dwell" class="btn btn-gesture" data-target-id="btn-dwell">
-          <span class="btn-icon" aria-hidden="true">⏱️</span>
-          Dwell Click
-        </button>
-
-        <div id="pinch-feedback" class="click-feedback" hidden aria-live="polite">✓ Pinch Clicked!</div>
-        <div id="dwell-feedback" class="click-feedback" hidden aria-live="polite">✓ Dwell Clicked!</div>
-
-        <div class="hud-hint">
-          Pinch &amp; release = click<br />
-          Hover 0.8 s = dwell
         </div>
       </div>
 

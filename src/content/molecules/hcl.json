@@ -1,0 +1,17 @@
+{
+  "id": "hcl",
+  "name": "Hydrogen Chloride",
+  "formula": "HCl",
+  "classLevel": [10, 11],
+  "tags": ["Polar", "Acid", "Diatomic", "Electronegative"],
+  "geometry": "Linear",
+  "notes": "Strongly polar covalent bond due to chlorine's higher electronegativity.",
+  "ncertRef": "Class 10 Chapter 2: Acids, Bases and Salts",
+  "atoms": [
+    { "id": 0, "element": "Cl", "position": [0, 0, 0] },
+    { "id": 1, "element": "H", "position": [1.27, 0, 0] }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1, "order": 1, "targetLength": 1.27 }
+  ]
+}

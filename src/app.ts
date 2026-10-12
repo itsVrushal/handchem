@@ -1,14 +1,8 @@
 /**
  * app.ts
- * Central orchestrator for Phase 0 / Phase 1.
- * Wires the gesture pipeline, mouse fallback, Three.js scene, and all UI.
- *
- * Single rAF loop drives:
- *   1. Inference throttle   (~15 fps)
- *   2. Three.js render      (display fps)
- *   3. Cursor overlay render
- *   4. Camera preview render
- *   5. Debug panel update
+ * Central orchestrator for Molecule Hands Phase 2:
+ * Wires the gesture pipeline, mouse fallback, Three.js 3D molecule scene,
+ * Verlet physics solver, Chemistry HUD, Energy curve, and hand-operable UI.
  */
 
 import { EventBus } from './input/events';
@@ -19,8 +13,14 @@ import { Cursor } from './ui/cursor';
 import { ButtonManager } from './ui/buttons';
 import { CameraPreview } from './ui/preview';
 import { DebugPanel } from './ui/debugPanel';
+import { ChemHUD } from './ui/hud';
+import { EnergyGraph } from './ui/energyGraph';
+import { MoleculeSelector } from './ui/moleculeSelector';
+import { MoleculePhysics } from './chem/physics';
+import { getDefaultMolecule } from './content/molecules';
+import type { MoleculeData, RepresentationMode } from './chem/types';
 
-const INFERENCE_INTERVAL_MS = 1000 / 15; // 15 fps throttle
+const INFERENCE_INTERVAL_MS = 1000 / 15; // 15 fps inference throttle
 const REST_REMINDER_MS = 10 * 60 * 1000; // 10 minutes
 
 export class App {
@@ -32,6 +32,13 @@ export class App {
   private readonly preview: CameraPreview;
   private readonly debug: DebugPanel;
   private readonly mouseAdapter: MouseAdapter;
+
+  // Phase 2 Chemistry Components
+  private physics: MoleculePhysics;
+  private hud: ChemHUD;
+  private energyGraph: EnergyGraph;
+  private moleculeSelector: MoleculeSelector;
+  private currentMode: RepresentationMode = 'ballAndStick';
 
   private rafId = 0;
   private lastInferenceTime = -Infinity;
@@ -46,51 +53,130 @@ export class App {
   private trackingStartTime: number | null = null;
   private restReminderShown = false;
 
+  // Active interaction tracking
+  private activeGrabbedAtomId: number | null = null;
+
   constructor(private readonly video: HTMLVideoElement) {
-    const mainCanvas  = document.getElementById('main-canvas')   as HTMLCanvasElement;
+    const mainCanvas = document.getElementById('main-canvas') as HTMLCanvasElement;
     const cursorCanvas = document.getElementById('cursor-canvas') as HTMLCanvasElement;
     const skeletonCanvas = document.getElementById('skeleton-canvas') as HTMLCanvasElement;
+    const energyCanvas = document.getElementById('energy-canvas') as HTMLCanvasElement;
 
-    this.scene  = new Scene(mainCanvas, this.bus);
+    this.scene = new Scene(mainCanvas, this.bus);
     this.cursor = new Cursor(cursorCanvas, this.bus);
     this.buttons = new ButtonManager(this.bus);
     this.preview = new CameraPreview(video, skeletonCanvas);
-    this.debug   = new DebugPanel();
+    this.debug = new DebugPanel();
     this.tracker = new HandTracker(this.bus);
     this.mouseAdapter = new MouseAdapter(this.bus, mainCanvas);
 
+    // Initialize Chemistry Modules with default molecule (Water)
+    const initialMol = getDefaultMolecule();
+    this.physics = new MoleculePhysics(initialMol);
+    this.scene.setMolecule(initialMol, this.currentMode);
+
+    this.hud = new ChemHUD('chem-hud');
+    this.hud.setMolecule(initialMol);
+
+    this.energyGraph = new EnergyGraph(energyCanvas);
+    const initialRestLen = this.physics.bondRestLengths[0] ?? 0.96;
+    this.energyGraph.setRestLength(initialRestLen);
+
+    this.moleculeSelector = new MoleculeSelector(
+      'mol-title',
+      'mol-prev',
+      'mol-next',
+      (mol) => this.switchMolecule(mol),
+    );
+
     this.wireUI();
+    this.wirePhysics();
+  }
+
+  private switchMolecule(mol: MoleculeData): void {
+    this.physics = new MoleculePhysics(mol);
+    this.scene.setMolecule(mol, this.currentMode);
+    this.hud.setMolecule(mol);
+    const restLen = this.physics.bondRestLengths[0] ?? 1.0;
+    this.energyGraph.setRestLength(restLen);
+  }
+
+  private wirePhysics(): void {
+    // When scene grabs an atom on camera plane
+    this.scene.onAtomGrab = (atomId, targetPos) => {
+      this.activeGrabbedAtomId = atomId;
+      this.physics.setGrabbedAtom(atomId, targetPos);
+      this.scene.highlightAtom(atomId);
+    };
+
+    // When scene drags atom
+    this.scene.onAtomMove = (targetPos) => {
+      this.physics.updateGrabbedPosition(targetPos);
+    };
+
+    // When atom is released
+    this.scene.onAtomRelease = () => {
+      this.activeGrabbedAtomId = null;
+      this.physics.releaseGrab();
+      this.scene.highlightAtom(null);
+    };
   }
 
   private wireUI(): void {
-    // Register gesture-test buttons
-    const btnPinch = document.getElementById('btn-pinch') as HTMLButtonElement;
-    const btnDwell = document.getElementById('btn-dwell') as HTMLButtonElement;
-    this.buttons.register('btn-pinch', btnPinch);
-    this.buttons.register('btn-dwell', btnDwell);
+    // Register header and action buttons
+    const repToggle = document.getElementById('btn-rep-toggle') as HTMLButtonElement;
+    const resetBtn = document.getElementById('btn-reset-structure') as HTMLButtonElement;
+    const debugToggle = document.getElementById('toggle-debug') as HTMLButtonElement;
+    const molPrev = document.getElementById('mol-prev') as HTMLButtonElement;
+    const molNext = document.getElementById('mol-next') as HTMLButtonElement;
 
-    // Click feedback
-    this.bus.on('click', (e) => {
-      if (e.targetId === 'btn-pinch') this.showFeedback('pinch-feedback');
-      if (e.targetId === 'btn-dwell') this.showFeedback('dwell-feedback');
+    if (repToggle) this.buttons.register('btn-rep-toggle', repToggle);
+    if (resetBtn) this.buttons.register('btn-reset-structure', resetBtn);
+    if (debugToggle) this.buttons.register('toggle-debug', debugToggle);
+    if (molPrev) this.buttons.register('mol-prev', molPrev);
+    if (molNext) this.buttons.register('mol-next', molNext);
+
+    // Representation Toggle Click
+    repToggle?.addEventListener('click', () => {
+      this.currentMode = this.currentMode === 'ballAndStick' ? 'spaceFilling' : 'ballAndStick';
+      this.scene.setRepresentation(this.currentMode);
+      const label = document.getElementById('rep-label');
+      if (label) {
+        label.textContent = this.currentMode === 'ballAndStick' ? 'Ball & Stick' : 'Space-Filling';
+      }
+    });
+
+    // Reset Structure Click
+    resetBtn?.addEventListener('click', () => {
+      this.physics.resetToRest();
+      this.scene.updateMoleculePositions(this.physics.positions);
+      this.energyGraph.setCurrentLength(this.physics.bondRestLengths[0] ?? 1.0);
+      this.hud.updateBondReadout(null);
+      this.hud.updateAngleReadout(null);
+    });
+
+    // Debug Panel Toggle
+    debugToggle?.addEventListener('click', () => {
+      this.debug.toggle();
     });
 
     // Dwell → click pipeline
     this.cursor.setDwellCallback((targetId) => this.buttons.fireDwell(targetId));
 
-    // Scene hit-test target: emit targetId on dragStart so scene knows what to grab
-    this.bus.on('dragStart', (e) => {
+    // Scene hit-testing: if cursor hovers or starts drag on an atom
+    this.bus.on('hover', (e) => {
       if (!e.targetId) {
-        // Check if cursor is on the 3D cube
-        const cubeId = this.scene.hitTest(e.position.x, e.position.y);
-        if (cubeId) {
-          // Re-emit with targetId set (the scene is already listening; this approach
-          // keeps code simple for Phase 0 – scene handles hit-testing internally)
+        const hit = this.scene.hitTest(e.position.x, e.position.y);
+        if (hit && hit.startsWith('atom-')) {
+          const atomId = parseInt(hit.replace('atom-', ''), 10);
+          this.scene.highlightAtom(atomId);
+        } else if (this.activeGrabbedAtomId === null) {
+          this.scene.highlightAtom(null);
         }
       }
     });
 
-    // Debug panel callbacks
+    // Debug panel tuning callbacks
     this.debug.onFilterChange = (minCutoff, beta) => {
       this.tracker.updateFilterConfig({ minCutoff, beta });
     };
@@ -101,23 +187,25 @@ export class App {
     // Log all events in debug panel
     this.bus.onAny((e) => this.debug.logEvent(e));
 
-    // Status messages for hand tracking state changes
+    // Status message for tracking loss
     this.bus.on('cancel', () => this.showStatus('Hand lost – cursor frozen', 'warning', 2000));
   }
 
   async init(): Promise<void> {
-    await this.tracker.init();
+    try {
+      await this.tracker.init();
+      const previewEl = document.getElementById('camera-preview');
+      if (previewEl) previewEl.hidden = false;
+    } catch (err) {
+      console.info('HandTracker init skipped or failed; using mouse fallback:', err);
+    }
 
-    // Show HUD
-    (document.getElementById('hud-panel') as HTMLElement).hidden = false;
-    (document.getElementById('camera-preview') as HTMLElement).hidden = false;
-
-    // Start loop
+    // Start requestAnimationFrame loop
     this.rafId = requestAnimationFrame((t) => this.loop(t));
   }
 
   private loop(timestamp: number): void {
-    const deltaSec = Math.min((timestamp - this.prevFrameTime) / 1000, 0.1);
+    const deltaSec = Math.min((timestamp - this.prevFrameTime) / 1000, 0.05);
     this.prevFrameTime = timestamp;
 
     // ── FPS counting ────────────────────────────────────────────────
@@ -129,7 +217,7 @@ export class App {
       this.fpsMeasureStart = timestamp;
     }
 
-    // ── Inference ───────────────────────────────────────────────────
+    // ── Inference throttle (~15 fps) ────────────────────────────────
     let inferenceMs = 0;
     if (timestamp - this.lastInferenceTime >= INFERENCE_INTERVAL_MS) {
       const result = this.tracker.process(this.video, timestamp);
@@ -152,11 +240,6 @@ export class App {
           this.restReminderShown = false;
         }
 
-        // Tracking status messages
-        if (m.isTracking && m.palmWidth < 0.05) {
-          this.showStatus('Move your hand closer', 'warning', 1200);
-        }
-
         this.debug.update({
           fps: this.displayFps,
           inferenceMs,
@@ -166,28 +249,81 @@ export class App {
       this.lastInferenceTime = timestamp;
     }
 
-    // ── Button hover hit-test ────────────────────────────────────────
+    // ── Physics Step ────────────────────────────────────────────────
+    this.physics.step(deltaSec);
+    this.scene.updateMoleculePositions(this.physics.positions);
+
+    // ── Live Measurements & Energy Graph ────────────────────────────
+    this.updateLiveMeasurements();
+
+    // ── Button hover hit-test & magnetic ease ───────────────────────
     const cursorPos = this.cursor.getDisplayPos();
     const { hoverId, magnetRect } = this.buttons.update(cursorPos.x, cursorPos.y);
     this.mouseAdapter.setHoveredTarget(hoverId ?? undefined);
 
+    // If not hovering over a UI button, check for magnetic pull toward nearest atom
+    let atomMagnetRect: DOMRect | null = magnetRect;
+    if (!hoverId) {
+      const hit = this.scene.hitTest(cursorPos.x, cursorPos.y);
+      if (hit && hit.startsWith('atom-')) {
+        const atomId = parseInt(hit.replace('atom-', ''), 10);
+        const screenPos = this.scene.getAtomScreenCoords(atomId);
+        if (screenPos) {
+          const pxX = screenPos.x * window.innerWidth;
+          const pxY = screenPos.y * window.innerHeight;
+          atomMagnetRect = DOMRect.fromRect({ x: pxX - 16, y: pxY - 16, width: 32, height: 32 });
+        }
+      }
+    }
+
     // ── Render ──────────────────────────────────────────────────────
     this.scene.render(deltaSec);
-    this.cursor.render(timestamp, hoverId, magnetRect);
+    this.cursor.render(timestamp, hoverId, atomMagnetRect);
     this.preview.render();
 
     this.rafId = requestAnimationFrame((t) => this.loop(t));
   }
 
-  private feedbackTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private updateLiveMeasurements(): void {
+    const mol = this.physics.molecule;
+    if (mol.bonds.length === 0) return;
 
-  private showFeedback(id: string): void {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.hidden = false;
-    clearTimeout(this.feedbackTimers.get(id));
-    const t = setTimeout(() => { el.hidden = true; }, 1800);
-    this.feedbackTimers.set(id, t);
+    // If an atom is grabbed, find the connected bond and angle
+    let activeBond = mol.bonds[0]!;
+    if (this.activeGrabbedAtomId !== null) {
+      const connected = mol.bonds.find(
+        (b) => b.a === this.activeGrabbedAtomId || b.b === this.activeGrabbedAtomId,
+      );
+      if (connected) activeBond = connected;
+    }
+
+    const curBondLen = this.physics.getBondLength(activeBond.a, activeBond.b);
+    const restBondLen = activeBond.targetLength ?? 1.0;
+
+    this.hud.updateBondReadout({ current: curBondLen, rest: restBondLen });
+    this.energyGraph.setCurrentLength(curBondLen);
+
+    // Check angle constraint
+    if (mol.angleConstraints && mol.angleConstraints.length > 0) {
+      let activeAngle = mol.angleConstraints[0]!;
+      if (this.activeGrabbedAtomId !== null) {
+        const connAngle = mol.angleConstraints.find(
+          (c) =>
+            c.atomA === this.activeGrabbedAtomId ||
+            c.centerAtom === this.activeGrabbedAtomId ||
+            c.atomB === this.activeGrabbedAtomId,
+        );
+        if (connAngle) activeAngle = connAngle;
+      }
+      const curAngle = this.physics.getAngleDeg(
+        activeAngle.atomA,
+        activeAngle.centerAtom,
+        activeAngle.atomB,
+      );
+      this.hud.updateAngleReadout({ current: curAngle, target: activeAngle.targetAngleDeg });
+    } else {
+      this.hud.updateAngleReadout(null);
+    }
   }
 
   private statusTimer: ReturnType<typeof setTimeout> | null = null;
@@ -199,7 +335,9 @@ export class App {
     el.className = `status-message${type !== 'info' ? ` ${type}` : ''}`;
     el.hidden = false;
     if (this.statusTimer) clearTimeout(this.statusTimer);
-    this.statusTimer = setTimeout(() => { el.hidden = true; }, durationMs);
+    this.statusTimer = setTimeout(() => {
+      el.hidden = true;
+    }, durationMs);
   }
 
   dispose(): void {

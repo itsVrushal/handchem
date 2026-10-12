@@ -1,0 +1,17 @@
+{
+  "id": "o2",
+  "name": "Oxygen Gas",
+  "formula": "O₂",
+  "classLevel": [9, 10],
+  "tags": ["Diatomic", "Gas", "Double Bond"],
+  "geometry": "Linear",
+  "notes": "Essential for respiration. Shares four electrons in a stable double covalent bond.",
+  "ncertRef": "Class 10 Chapter 4: Carbon and its Compounds",
+  "atoms": [
+    { "id": 0, "element": "O", "position": [-0.605, 0, 0] },
+    { "id": 1, "element": "O", "position": [0.605, 0, 0] }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1, "order": 2, "targetLength": 1.21 }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "id": "c2h2",
+  "name": "Ethyne (Acetylene)",
+  "formula": "C₂H₂",
+  "classLevel": [10, 11],
+  "tags": ["Linear", "Alkyne", "Triple Bond", "Hydrocarbon"],
+  "geometry": "Linear",
+  "notes": "Linear molecule with sp hybridised carbons, one sigma bond and two pi bonds.",
+  "ncertRef": "Class 10 Chapter 4 / Class 11 Chapter 13: Hydrocarbons",
+  "atoms": [
+    { "id": 0, "element": "C", "position": [-0.60, 0, 0] },
+    { "id": 1, "element": "C", "position": [0.60, 0, 0] },
+    { "id": 2, "element": "H", "position": [-1.66, 0, 0] },
+    { "id": 3, "element": "H", "position": [1.66, 0, 0] }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1, "order": 3, "targetLength": 1.20 },
+    { "a": 0, "b": 2, "order": 1, "targetLength": 1.06 },
+    { "a": 1, "b": 3, "order": 1, "targetLength": 1.06 }
+  ],
+  "angleConstraints": [
+    { "atomA": 2, "centerAtom": 0, "atomB": 1, "targetAngleDeg": 180.0 },
+    { "atomA": 0, "centerAtom": 1, "atomB": 3, "targetAngleDeg": 180.0 }
+  ]
+}

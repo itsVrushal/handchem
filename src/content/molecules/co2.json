@@ -1,0 +1,22 @@
+{
+  "id": "co2",
+  "name": "Carbon Dioxide",
+  "formula": "CO₂",
+  "classLevel": [9, 10, 11],
+  "tags": ["Linear", "Greenhouse Gas", "Nonpolar", "Double Bonds"],
+  "geometry": "Linear",
+  "notes": "Linear molecule with two double bonds and no lone pairs on the central carbon atom.",
+  "ncertRef": "Class 10 Chapter 4 / Class 11 Chapter 4: VSEPR Theory",
+  "atoms": [
+    { "id": 0, "element": "C", "position": [0, 0, 0] },
+    { "id": 1, "element": "O", "position": [-1.16, 0, 0] },
+    { "id": 2, "element": "O", "position": [1.16, 0, 0] }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1, "order": 2, "targetLength": 1.16 },
+    { "a": 0, "b": 2, "order": 2, "targetLength": 1.16 }
+  ],
+  "angleConstraints": [
+    { "atomA": 1, "centerAtom": 0, "atomB": 2, "targetAngleDeg": 180.0 }
+  ]
+}

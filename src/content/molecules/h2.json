@@ -1,0 +1,17 @@
+{
+  "id": "h2",
+  "name": "Hydrogen Gas",
+  "formula": "H₂",
+  "classLevel": [9, 10],
+  "tags": ["Diatomic", "Gas", "Covalent Single Bond"],
+  "geometry": "Linear",
+  "notes": "Simplest molecule in the universe with a single sigma covalent bond.",
+  "ncertRef": "Class 9 Chapter 3 / Class 10 Chapter 4",
+  "atoms": [
+    { "id": 0, "element": "H", "position": [-0.37, 0, 0] },
+    { "id": 1, "element": "H", "position": [0.37, 0, 0] }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1, "order": 1, "targetLength": 0.74 }
+  ]
+}

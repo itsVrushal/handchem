@@ -1,37 +1,40 @@
 /**
  * scene.ts
- * Three.js scene for Phase 0: a draggable, lit cube in a dark environment.
- * Listens to the unified InputEvent bus – no raw DOM events.
- *
- * Interaction model:
- *   • dragStart with targetId === 'cube'  → grab cube, compute drag plane
- *   • dragStart with no targetId         → orbit camera (trackball)
- *   • drag                               → move cube OR orbit
- *   • dragEnd                            → release
- *   • zoom                               → dolly camera in/out
- *   • orbit                              → explicit orbit (from gesture engine)
+ * Three.js scene for Molecule Hands Phase 2:
+ * - Renders 3D molecules with Ball-and-Stick / Space-Filling representations
+ * - Real-time atom raycasting & magnetic target projection
+ * - Camera-parallel plane raycasting for dragging grabbed atoms
+ * - Trackball camera orbit on empty space & two-hand pinch zoom
  */
 
 import * as THREE from 'three';
 import { EventBus } from '../input/events';
-
-const CUBE_TARGET_ID = 'cube';
+import type { MoleculeData, RepresentationMode } from '../chem/types';
+import { MoleculeMesh } from './moleculeMesh';
 
 export class Scene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene: THREE.Scene;
-  private readonly camera: THREE.PerspectiveCamera;
-  private readonly cube: THREE.Mesh;
+  public readonly camera: THREE.PerspectiveCamera;
   private readonly raycaster = new THREE.Raycaster();
 
-  // Orbit state (spherical coords)
-  private readonly spherical = new THREE.Spherical(8, Math.PI / 3.5, 0.5);
+  // Active 3D molecule representation
+  private moleculeMesh: MoleculeMesh | null = null;
+  private currentMode: RepresentationMode = 'ballAndStick';
 
-  // Drag state
-  private mode: 'none' | 'orbit' | 'drag' = 'none';
+  // Orbit state (spherical coordinates)
+  private readonly spherical = new THREE.Spherical(6.5, Math.PI / 2.8, 0.4);
+
+  // Drag interaction state
+  private mode: 'none' | 'orbit' | 'atomDrag' = 'none';
+  private grabbedAtomId: number | null = null;
   private readonly dragPlane = new THREE.Plane();
-  private readonly grabOffset = new THREE.Vector3();
   private readonly planeHit = new THREE.Vector3();
+
+  // Callback to update physics when an atom is dragged
+  public onAtomGrab?: (atomId: number, targetPos: [number, number, number]) => void;
+  public onAtomMove?: (targetPos: [number, number, number]) => void;
+  public onAtomRelease?: () => void;
 
   constructor(canvas: HTMLCanvasElement, bus: EventBus) {
     // ── Renderer ──────────────────────────────────────────────────
@@ -41,103 +44,153 @@ export class Scene {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.15;
 
     // ── Scene ─────────────────────────────────────────────────────
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x08080f);
-    this.scene.fog = new THREE.Fog(0x08080f, 20, 50);
+    this.scene.fog = new THREE.Fog(0x08080f, 15, 45);
 
     // ── Camera ────────────────────────────────────────────────────
     this.camera = new THREE.PerspectiveCamera(
-      55,
+      50,
       window.innerWidth / window.innerHeight,
       0.1,
       100,
     );
     this.updateCameraFromSpherical();
 
-    // ── Lights ────────────────────────────────────────────────────
-    const ambient = new THREE.AmbientLight(0x4040ff, 0.25);
+    // ── Studio Lighting for CPK Atoms ─────────────────────────────
+    const ambient = new THREE.AmbientLight(0xffffff, 0.65);
     this.scene.add(ambient);
 
-    const sun = new THREE.DirectionalLight(0xffffff, 1.4);
-    sun.position.set(6, 10, 8);
-    sun.castShadow = true;
-    sun.shadow.mapSize.setScalar(1024);
-    this.scene.add(sun);
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.6);
+    mainLight.position.set(6, 9, 7);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.setScalar(1024);
+    this.scene.add(mainLight);
 
-    const fill = new THREE.PointLight(0x7c3aed, 1.2, 20);
-    fill.position.set(-4, 2, -3);
-    this.scene.add(fill);
+    const fillLight = new THREE.PointLight(0x7c3aed, 1.2, 25);
+    fillLight.position.set(-5, 3, -4);
+    this.scene.add(fillLight);
 
-    const rim = new THREE.PointLight(0x4f46e5, 0.6, 15);
-    rim.position.set(4, -2, -5);
-    this.scene.add(rim);
+    const rimLight = new THREE.PointLight(0x38bdf8, 1.0, 20);
+    rimLight.position.set(4, -3, -5);
+    this.scene.add(rimLight);
 
-    // ── Ground plane ──────────────────────────────────────────────
-    const groundGeo = new THREE.PlaneGeometry(30, 30);
-    const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x0d0d1a,
-      roughness: 1,
-      metalness: 0,
-    });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -2.5;
-    ground.receiveShadow = true;
-    this.scene.add(ground);
-
-    // ── Cube ──────────────────────────────────────────────────────
-    const geo = new THREE.BoxGeometry(1.4, 1.4, 1.4);
-    const mat = new THREE.MeshStandardMaterial({
-      color: 0x7c3aed,
-      roughness: 0.25,
-      metalness: 0.65,
-      emissive: new THREE.Color(0x4f46e5),
-      emissiveIntensity: 0.08,
-    });
-    this.cube = new THREE.Mesh(geo, mat);
-    this.cube.castShadow = true;
-    this.cube.receiveShadow = true;
-    this.cube.userData['targetId'] = CUBE_TARGET_ID;
-    // Idle rotation animation
-    this.cube.userData['spinning'] = true;
-    this.scene.add(this.cube);
-
-    // ── Helper grid ───────────────────────────────────────────────
-    const grid = new THREE.GridHelper(20, 20, 0x1a1a2e, 0x1a1a2e);
-    grid.position.y = -2.5;
+    // ── Subtle backdrop grid ──────────────────────────────────────
+    const grid = new THREE.GridHelper(24, 24, 0x1e1e38, 0x141428);
+    grid.position.y = -3.2;
     this.scene.add(grid);
-
-    // ── Wireframe edge highlight ───────────────────────────────────
-    const edges = new THREE.EdgesGeometry(geo);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0xa78bfa, linewidth: 1, opacity: 0.6, transparent: true });
-    const wireframe = new THREE.LineSegments(edges, lineMat);
-    this.cube.add(wireframe);
 
     // ── Event wiring ──────────────────────────────────────────────
     this.wireEvents(bus);
 
-    // ── Resize ────────────────────────────────────────────────────
     window.addEventListener('resize', this.onResize);
   }
 
-  // ── Event handling ──────────────────────────────────────────────
+  public setMolecule(molecule: MoleculeData, mode: RepresentationMode = this.currentMode): void {
+    if (this.moleculeMesh) {
+      this.scene.remove(this.moleculeMesh.group);
+      this.moleculeMesh.dispose();
+      this.moleculeMesh = null;
+    }
+
+    this.currentMode = mode;
+    this.moleculeMesh = new MoleculeMesh(molecule, mode);
+    this.scene.add(this.moleculeMesh.group);
+
+    // Auto-frame camera based on molecule extent
+    let maxDist = 1.5;
+    for (const a of molecule.atoms) {
+      const d = Math.sqrt(a.position[0] ** 2 + a.position[1] ** 2 + a.position[2] ** 2);
+      if (d > maxDist) maxDist = d;
+    }
+    this.spherical.radius = Math.max(4.5, Math.min(12.0, maxDist * 3.2));
+    this.updateCameraFromSpherical();
+  }
+
+  public updateMoleculePositions(positions: [number, number, number][]): void {
+    if (this.moleculeMesh) {
+      this.moleculeMesh.updatePositions(positions);
+    }
+  }
+
+  public setRepresentation(mode: RepresentationMode): void {
+    this.currentMode = mode;
+    if (this.moleculeMesh) {
+      this.moleculeMesh.setRepresentation(mode);
+    }
+  }
+
+  public highlightAtom(atomId: number | null): void {
+    if (this.moleculeMesh) {
+      this.moleculeMesh.highlightAtom(atomId);
+    }
+  }
+
+  // ── Raycasting & Coordinates ────────────────────────────────────
+
+  private toNDC(nx: number, ny: number): THREE.Vector2 {
+    return new THREE.Vector2(nx * 2 - 1, -(ny * 2 - 1));
+  }
+
+  /**
+   * Raycasts the scene at screen-normalised coords (nx, ny).
+   * Returns atom id if intersecting an atom sphere, or undefined.
+   */
+  public hitTest(nx: number, ny: number): string | undefined {
+    if (!this.moleculeMesh) return undefined;
+
+    const ndc = this.toNDC(nx, ny);
+    this.raycaster.setFromCamera(ndc, this.camera);
+    const atomMeshes = this.moleculeMesh.getAtomMeshes();
+    const hits = this.raycaster.intersectObjects(atomMeshes, false);
+
+    if (hits.length > 0) {
+      const hit = hits[0]!;
+      const atomId = hit.object.userData['atomId'] as number;
+      return `atom-${atomId}`;
+    }
+    return undefined;
+  }
+
+  /**
+   * Returns normalised screen coordinates [0, 1] for an atom, or null if behind camera.
+   */
+  public getAtomScreenCoords(atomId: number): { x: number; y: number } | null {
+    if (!this.moleculeMesh) return null;
+    const meshes = this.moleculeMesh.getAtomMeshes();
+    const mesh = meshes.find((m) => m.userData['atomId'] === atomId);
+    if (!mesh) return null;
+
+    const worldPos = new THREE.Vector3();
+    mesh.getWorldPosition(worldPos);
+    worldPos.project(this.camera);
+
+    if (worldPos.z > 1) return null; // behind camera
+
+    return {
+      x: (worldPos.x + 1) * 0.5,
+      y: (-worldPos.y + 1) * 0.5,
+    };
+  }
+
+  // ── Event Wiring ────────────────────────────────────────────────
 
   private wireEvents(bus: EventBus): void {
     bus.on('dragStart', (e) => {
-      if (e.targetId === CUBE_TARGET_ID) {
-        this.startCubeDrag(e.position.x, e.position.y);
+      if (e.targetId && e.targetId.startsWith('atom-')) {
+        const atomId = parseInt(e.targetId.replace('atom-', ''), 10);
+        this.startAtomDrag(atomId, e.position.x, e.position.y);
       } else if (!e.targetId) {
         this.mode = 'orbit';
-        this.cube.userData['spinning'] = false;
       }
     });
 
     bus.on('drag', (e) => {
-      if (this.mode === 'drag') {
-        this.moveCube(e.position.x, e.position.y);
+      if (this.mode === 'atomDrag') {
+        this.moveAtom(e.position.x, e.position.y);
       } else if (this.mode === 'orbit') {
         this.orbit(e.delta.x, e.delta.y);
       }
@@ -146,43 +199,57 @@ export class Scene {
     bus.on('orbit', (e) => this.orbit(e.delta.x, e.delta.y));
 
     bus.on('dragEnd', () => {
-      if (this.mode === 'drag') this.cube.userData['spinning'] = false;
-      if (this.mode === 'orbit') this.cube.userData['spinning'] = false;
+      if (this.mode === 'atomDrag') {
+        this.onAtomRelease?.();
+        this.grabbedAtomId = null;
+      }
       this.mode = 'none';
     });
 
     bus.on('cancel', () => {
+      if (this.mode === 'atomDrag') {
+        this.onAtomRelease?.();
+        this.grabbedAtomId = null;
+      }
       this.mode = 'none';
     });
 
     bus.on('zoom', (e) => {
-      this.spherical.radius = Math.max(2, Math.min(22, this.spherical.radius * e.factor));
+      this.spherical.radius = Math.max(2.5, Math.min(18.0, this.spherical.radius * e.factor));
       this.updateCameraFromSpherical();
     });
   }
 
-  private startCubeDrag(nx: number, ny: number): void {
-    const ndc = this.toNDC(nx, ny);
-    this.raycaster.setFromCamera(ndc, this.camera);
-    const hits = this.raycaster.intersectObject(this.cube);
-    if (hits.length > 0) {
-      const hit = hits[0]!;
-      // Drag plane: camera-parallel through cube centre
-      this.dragPlane.setFromNormalAndCoplanarPoint(
-        this.camera.getWorldDirection(new THREE.Vector3()).negate(),
-        this.cube.position,
-      );
-      this.grabOffset.copy(this.cube.position).sub(hit.point);
-      this.mode = 'drag';
-      this.cube.userData['spinning'] = false;
-    }
-  }
+  private startAtomDrag(atomId: number, nx: number, ny: number): void {
+    if (!this.moleculeMesh) return;
+    const meshes = this.moleculeMesh.getAtomMeshes();
+    const mesh = meshes.find((m) => m.userData['atomId'] === atomId);
+    if (!mesh) return;
 
-  private moveCube(nx: number, ny: number): void {
+    this.grabbedAtomId = atomId;
+    this.mode = 'atomDrag';
+
+    // Camera-parallel drag plane passing through the atom's current world position
+    const atomWorldPos = new THREE.Vector3();
+    mesh.getWorldPosition(atomWorldPos);
+
+    const camDir = this.camera.getWorldDirection(new THREE.Vector3()).negate();
+    this.dragPlane.setFromNormalAndCoplanarPoint(camDir, atomWorldPos);
+
+    // Initial position on plane
     const ndc = this.toNDC(nx, ny);
     this.raycaster.setFromCamera(ndc, this.camera);
     if (this.raycaster.ray.intersectPlane(this.dragPlane, this.planeHit)) {
-      this.cube.position.copy(this.planeHit).add(this.grabOffset);
+      this.onAtomGrab?.(atomId, [this.planeHit.x, this.planeHit.y, this.planeHit.z]);
+    }
+  }
+
+  private moveAtom(nx: number, ny: number): void {
+    if (this.grabbedAtomId === null) return;
+    const ndc = this.toNDC(nx, ny);
+    this.raycaster.setFromCamera(ndc, this.camera);
+    if (this.raycaster.ray.intersectPlane(this.dragPlane, this.planeHit)) {
+      this.onAtomMove?.([this.planeHit.x, this.planeHit.y, this.planeHit.z]);
     }
   }
 
@@ -198,29 +265,15 @@ export class Scene {
     this.camera.lookAt(0, 0, 0);
   }
 
-  private toNDC(nx: number, ny: number): THREE.Vector2 {
-    return new THREE.Vector2(nx * 2 - 1, -(ny * 2 - 1));
-  }
-
-  /** Returns the targetId of the object under the screen-normalised cursor, or undefined. */
-  hitTest(nx: number, ny: number): string | undefined {
-    const ndc = this.toNDC(nx, ny);
-    this.raycaster.setFromCamera(ndc, this.camera);
-    const hits = this.raycaster.intersectObject(this.cube);
-    return hits.length > 0 ? (this.cube.userData['targetId'] as string) : undefined;
-  }
-
   // ── Render loop ─────────────────────────────────────────────────
 
-  render(deltaSec: number): void {
-    if (this.cube.userData['spinning']) {
-      this.cube.rotation.x += deltaSec * 0.4;
-      this.cube.rotation.y += deltaSec * 0.6;
+  public render(deltaSec: number): void {
+    // Gentle ambient drift when not dragging
+    if (this.mode === 'none' && this.moleculeMesh) {
+      this.moleculeMesh.group.rotation.y += deltaSec * 0.12;
     }
     this.renderer.render(this.scene, this.camera);
   }
-
-  // ── Resize ──────────────────────────────────────────────────────
 
   private onResize = (): void => {
     const w = window.innerWidth;
@@ -230,8 +283,11 @@ export class Scene {
     this.renderer.setSize(w, h, false);
   };
 
-  dispose(): void {
+  public dispose(): void {
     window.removeEventListener('resize', this.onResize);
+    if (this.moleculeMesh) {
+      this.moleculeMesh.dispose();
+    }
     this.renderer.dispose();
   }
 }

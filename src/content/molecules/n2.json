@@ -1,0 +1,17 @@
+{
+  "id": "n2",
+  "name": "Nitrogen Gas",
+  "formula": "N₂",
+  "classLevel": [9, 10],
+  "tags": ["Diatomic", "Gas", "Triple Bond"],
+  "geometry": "Linear",
+  "notes": "Makes up 78% of Earth's atmosphere. Features an exceptionally strong triple bond.",
+  "ncertRef": "Class 10 Chapter 4: Covalent Bonding",
+  "atoms": [
+    { "id": 0, "element": "N", "position": [-0.55, 0, 0] },
+    { "id": 1, "element": "N", "position": [0.55, 0, 0] }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1, "order": 3, "targetLength": 1.10 }
+  ]
+}

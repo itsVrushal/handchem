@@ -83,6 +83,8 @@ export class HandTracker {
   };
 
   private latestLandmarks: LandmarkList[] | null = null;
+  private prevTwoHandDist: number | null = null;
+  private prevTwoHandAngle: number | null = null;
 
   constructor(private readonly bus: EventBus) {
     this.filterCfg = { minCutoff: 1.0, beta: 0.007, dCutoff: 1.0 };
@@ -103,7 +105,7 @@ export class HandTracker {
         this.landmarker = await HandLandmarker.createFromOptions(vision, {
           baseOptions: { modelAssetPath: MODEL_URL, delegate },
           runningMode: 'VIDEO',
-          numHands: 1,
+          numHands: 2,
           minHandDetectionConfidence: 0.5,
           minHandPresenceConfidence: 0.5,
           minTrackingConfidence: 0.5,
@@ -203,6 +205,60 @@ export class HandTracker {
       cursorX: screen.x,
       cursorY: screen.y,
     };
+
+    // Two-hand zoom and rotate detection
+    if (rawLandmarkSets.length >= 2) {
+      const lm0 = rawLandmarkSets[0];
+      const lm1 = rawLandmarkSets[1];
+      if (lm0 && lm1 && lm0.length >= 9 && lm1.length >= 9) {
+        const p0 = lm0[8]!;
+        const p1 = lm1[8]!;
+        const dx = (1 - p0.x) - (1 - p1.x);
+        const dy = p0.y - p1.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+
+        const f0 = extractFeatures(lm0 as LandmarkList);
+        const f1 = extractFeatures(lm1 as LandmarkList);
+
+        if (f0.pinchRatio < 0.45 && f1.pinchRatio < 0.45) {
+          if (this.prevTwoHandDist !== null && dist > 1e-4) {
+            const factor = this.prevTwoHandDist / dist;
+            if (Math.abs(factor - 1) > 0.015) {
+              this.bus.emit({
+                type: 'zoom',
+                factor: Math.max(0.85, Math.min(1.15, factor)),
+                timestamp,
+                source: 'gesture',
+                position: { x: screen.x, y: screen.y },
+              });
+            }
+          }
+          if (this.prevTwoHandAngle !== null) {
+            let deltaAngle = angle - this.prevTwoHandAngle;
+            if (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
+            if (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
+            if (Math.abs(deltaAngle) > 0.02) {
+              this.bus.emit({
+                type: 'orbit',
+                delta: { x: deltaAngle * 1.5, y: 0 },
+                timestamp,
+                source: 'gesture',
+                position: { x: screen.x, y: screen.y },
+              });
+            }
+          }
+          this.prevTwoHandDist = dist;
+          this.prevTwoHandAngle = angle;
+        } else {
+          this.prevTwoHandDist = null;
+          this.prevTwoHandAngle = null;
+        }
+      }
+    } else {
+      this.prevTwoHandDist = null;
+      this.prevTwoHandAngle = null;
+    }
   }
 
   // ── Tracking loss ───────────────────────────────────────────────

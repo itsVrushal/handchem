@@ -1,0 +1,22 @@
+{
+  "id": "h2o",
+  "name": "Water",
+  "formula": "H₂O",
+  "classLevel": [9, 10, 11],
+  "tags": ["Polar", "Solvent", "VSEPR Bent", "Hydrogen Bonding"],
+  "geometry": "Bent",
+  "notes": "Bent geometry with an angle of 104.5° caused by repulsion from two oxygen lone pairs.",
+  "ncertRef": "Class 10 Chapter 4 / Class 11 Chapter 4: Chemical Bonding",
+  "atoms": [
+    { "id": 0, "element": "O", "position": [0, 0, 0] },
+    { "id": 1, "element": "H", "position": [-0.759, 0.588, 0] },
+    { "id": 2, "element": "H", "position": [0.759, 0.588, 0] }
+  ],
+  "bonds": [
+    { "a": 0, "b": 1, "order": 1, "targetLength": 0.96 },
+    { "a": 0, "b": 2, "order": 1, "targetLength": 0.96 }
+  ],
+  "angleConstraints": [
+    { "atomA": 1, "centerAtom": 0, "atomB": 2, "targetAngleDeg": 104.5 }
+  ]
+}

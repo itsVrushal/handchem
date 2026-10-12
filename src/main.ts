@@ -20,6 +20,14 @@ const calInstruction = document.getElementById('cal-instruction')!   as HTMLElem
 const calCanvas    = document.getElementById('cal-canvas')!          as HTMLCanvasElement;
 const calVideo     = document.getElementById('cal-video')!           as HTMLVideoElement;
 const cameraVideo  = document.getElementById('camera-video')!        as HTMLVideoElement;
+const skipToMouseBtn = document.getElementById('skip-to-mouse')      as HTMLButtonElement | null;
+
+skipToMouseBtn?.addEventListener('click', () => {
+  permOverlay.hidden = true;
+  calOverlay.hidden = true;
+  const app = new App(cameraVideo);
+  app.init().catch(console.error);
+});
 
 // ── Calibration ───────────────────────────────────────────────────
 
