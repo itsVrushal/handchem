@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Molecule Hands – Interactive 3D Chemistry</title>
+    <meta
+      name="description"
+      content="Explore atoms, molecules and chemical bonds in 3D using just your webcam-tracked hand. Free, private, on-device processing."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- ── Permission Overlay ─────────────────────────── -->
+      <div
+        id="permission-overlay"
+        class="overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="perm-title"
+      >
+        <div class="overlay-card">
+          <div class="overlay-icon" aria-hidden="true">🧬</div>
+          <h1 id="perm-title">Molecule Hands</h1>
+          <p class="overlay-subtitle">Explore Chemistry With Your Hands</p>
+
+          <div class="privacy-notice" role="note">
+            <span class="privacy-icon" aria-hidden="true">🔒</span>
+            <p>
+              Your camera <strong>never leaves your device</strong>. All hand-tracking runs
+              locally in your browser — no video is uploaded, stored or sent anywhere.
+            </p>
+          </div>
+
+          <button id="start-btn" class="btn btn-primary btn-large">
+            <span class="btn-icon" aria-hidden="true">📷</span>
+            Allow Camera &amp; Start
+          </button>
+
+          <p id="start-error" class="overlay-error" hidden></p>
+          <p class="overlay-hint">
+            Best in good lighting · keep your hand 30–60 cm from camera
+          </p>
+        </div>
+      </div>
+
+      <!-- ── Calibration Overlay ────────────────────────── -->
+      <div
+        id="calibration-overlay"
+        class="overlay"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cal-title"
+      >
+        <div class="overlay-card calibration-card">
+          <h2 id="cal-title">Hand Calibration</h2>
+          <p id="cal-instruction" class="cal-instruction">Spread your palm open and hold still</p>
+
+          <div class="cal-preview">
+            <video id="cal-video" autoplay playsinline muted aria-hidden="true"></video>
+            <canvas id="cal-canvas" aria-hidden="true"></canvas>
+          </div>
+
+          <div class="cal-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+            <div id="cal-progress" class="cal-progress-fill"></div>
+          </div>
+          <p id="cal-status" class="cal-status" aria-live="polite">Detecting hand…</p>
+
+          <button id="cal-skip" class="btn btn-secondary">Skip Calibration</button>
+        </div>
+      </div>
+
+      <!-- ── Three.js Canvas ────────────────────────────── -->
+      <canvas id="main-canvas" aria-label="3D scene – use gestures or mouse to interact"></canvas>
+
+      <!-- ── Cursor Overlay (pointer-events:none) ───────── -->
+      <canvas id="cursor-canvas" aria-hidden="true"></canvas>
+
+      <!-- ── Status Toast ───────────────────────────────── -->
+      <div id="status-message" class="status-message" aria-live="polite" hidden></div>
+
+      <!-- ── Camera Preview ─────────────────────────────── -->
+      <div id="camera-preview" class="camera-preview" hidden aria-label="Hand camera preview">
+        <div class="preview-header">
+          <span class="preview-label">Hand Camera</span>
+          <span id="tracking-badge" class="tracking-badge tracking-none" aria-live="polite">No Hand</span>
+        </div>
+        <div class="preview-video-container">
+          <video id="camera-video" autoplay playsinline muted aria-hidden="true"></video>
+          <canvas id="skeleton-canvas" aria-hidden="true"></canvas>
+        </div>
+      </div>
+
+      <!-- ── HUD: Gesture Test Buttons ─────────────────── -->
+      <div id="hud-panel" class="hud-panel" hidden>
+        <p class="hud-title">Gesture Test</p>
+
+        <button id="btn-pinch" class="btn btn-gesture" data-target-id="btn-pinch">
+          <span class="btn-icon" aria-hidden="true">🤌</span>
+          Pinch Click
+        </button>
+
+        <button id="btn-dwell" class="btn btn-gesture" data-target-id="btn-dwell">
+          <span class="btn-icon" aria-hidden="true">⏱️</span>
+          Dwell Click
+        </button>
+
+        <div id="pinch-feedback" class="click-feedback" hidden aria-live="polite">✓ Pinch Clicked!</div>
+        <div id="dwell-feedback" class="click-feedback" hidden aria-live="polite">✓ Dwell Clicked!</div>
+
+        <div class="hud-hint">
+          Pinch &amp; release = click<br />
+          Hover 0.8 s = dwell
+        </div>
+      </div>
+
+      <!-- ── Debug Panel ────────────────────────────────── -->
+      <div id="debug-panel" class="debug-panel" hidden aria-label="Debug panel">
+        <div class="debug-header">
+          <span>Debug Panel</span>
+          <button id="debug-close" class="debug-close" aria-label="Close debug panel">✕</button>
+        </div>
+
+        <div class="debug-grid">
+          <div class="debug-group">
+            <div class="debug-label">Render FPS</div>
+            <div id="dbg-fps" class="debug-value">—</div>
+          </div>
+          <div class="debug-group">
+            <div class="debug-label">Inference ms</div>
+            <div id="dbg-inference" class="debug-value">—</div>
+          </div>
+          <div class="debug-group">
+            <div class="debug-label">Hand State</div>
+            <div id="dbg-state" class="debug-value">—</div>
+          </div>
+          <div class="debug-group">
+            <div class="debug-label">Confidence</div>
+            <div id="dbg-conf" class="debug-value">—</div>
+          </div>
+        </div>
+
+        <!-- Pinch ratio live bar -->
+        <div class="debug-section">
+          <div class="debug-label">Pinch Ratio <span id="dbg-pinch-val" class="debug-bar-val">—</span></div>
+          <div class="debug-bar-container">
+            <div id="dbg-pinch-bar" class="debug-bar" style="--fill:0%"></div>
+          </div>
+        </div>
+
+        <!-- 1€ Filter sliders -->
+        <div class="debug-section">
+          <div class="debug-label">1€ Filter</div>
+          <div class="debug-controls">
+            <label class="debug-control-label" for="dbg-minCutoff">
+              minCutoff <span id="minCutoff-val">1.00</span>
+            </label>
+            <input id="dbg-minCutoff" type="range" min="0.1" max="5" step="0.05" value="1.0" class="debug-slider" />
+            <label class="debug-control-label" for="dbg-beta">
+              beta <span id="beta-val">0.007</span>
+            </label>
+            <input id="dbg-beta" type="range" min="0.001" max="0.05" step="0.001" value="0.007" class="debug-slider" />
+          </div>
+        </div>
+
+        <!-- Pinch threshold sliders -->
+        <div class="debug-section">
+          <div class="debug-label">Pinch Thresholds</div>
+          <div class="debug-controls">
+            <label class="debug-control-label" for="dbg-pinchOn">
+              pinchOn <span id="pinchOn-val">0.30</span>
+            </label>
+            <input id="dbg-pinchOn" type="range" min="0.05" max="0.6" step="0.01" value="0.30" class="debug-slider" />
+            <label class="debug-control-label" for="dbg-pinchOff">
+              pinchOff <span id="dbg-pinchOff">0.45</span>
+            </label>
+            <input id="dbg-pinchOff" type="range" min="0.1" max="0.8" step="0.01" value="0.45" class="debug-slider" />
+          </div>
+        </div>
+
+        <!-- Event log -->
+        <div class="debug-section">
+          <div class="debug-label">Event Log</div>
+          <div id="event-log" class="event-log" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
