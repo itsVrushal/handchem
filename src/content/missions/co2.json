@@ -1,0 +1,45 @@
+{
+  "id": "co2",
+  "title": "Carbon Dioxide (CO₂) — Linear Double Bonds",
+  "classLevel": 10,
+  "ncertRef": "Class 10 Chapter 4 / Class 11 Chapter 4",
+  "estimatedMinutes": 3,
+  "description": "Explore carbon's tetravalency forming two double bonds with oxygens to complete octets.",
+  "moleculeId": "co2",
+  "badge": "🫧",
+  "steps": [
+    {
+      "id": "co2_1",
+      "type": "predict",
+      "prompt": "In CO₂, carbon forms double bonds with two oxygens. Without lone pairs on the central carbon, what bond angle minimizes repulsion?",
+      "options": [
+        "Bent (120°)",
+        "Linear (180°)",
+        "Pyramidal (109.5°)"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Spot on! The two double bonds repel each other to opposite sides of the carbon nucleus, forming a linear 180° geometry."
+    },
+    {
+      "id": "co2_2",
+      "type": "measure",
+      "prompt": "Grab an oxygen atom with your fist and stretch the C=O double bond. Compare the rest length (1.16 Å) with single bonds.",
+      "target": {
+        "expectedBondLength": [1.3, 1.8]
+      },
+      "explanation": "Double bonds are shorter and stiffer than single bonds because sharing 4 electrons generates a stronger electrostatic pull between the nuclei."
+    },
+    {
+      "id": "co2_3",
+      "type": "quiz",
+      "prompt": "How many total shared electron pairs exist in one CO₂ molecule?",
+      "options": [
+        "2 pairs (4 electrons)",
+        "4 pairs (8 electrons)",
+        "6 pairs (12 electrons)"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Each double bond contains 2 shared pairs, totaling 4 pairs (8 electrons) shared across the molecule."
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "id": "water",
+  "title": "Water (H₂O) — Why is Water Bent?",
+  "classLevel": 10,
+  "ncertRef": "Class 10 Chapter 4 / Class 11 Chapter 4",
+  "estimatedMinutes": 3,
+  "description": "Discover why the water molecule is bent at 104.5° instead of being linear like CO₂.",
+  "moleculeId": "h2o",
+  "badge": "💧",
+  "steps": [
+    {
+      "id": "w1",
+      "type": "predict",
+      "prompt": "Oxygen has 6 valence electrons and shares 2 with hydrogens. What shape do you predict water forms?",
+      "options": [
+        "Linear (180°) like a straight line",
+        "Bent / V-shaped (around 104.5°)",
+        "Equilateral Triangle (120°)"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Correct! Oxygen has 2 bonded pairs and 2 non-bonding lone pairs. The lone pairs exert strong electrostatic repulsion, pushing the H-O-H bond angle down from tetrahedral 109.5° to 104.5°."
+    },
+    {
+      "id": "w2",
+      "type": "measure",
+      "prompt": "Grab a hydrogen atom with your closed fist and stretch the O-H bond. Observe how potential energy increases as you pull against the bond spring.",
+      "target": {
+        "expectedBondLength": [1.15, 1.6]
+      },
+      "explanation": "Great work! Chemical bonds act like quantum harmonic springs: pulling them increases potential strain energy V(r), which pulls the atom back to its rest length (0.96 Å) upon release."
+    },
+    {
+      "id": "w3",
+      "type": "quiz",
+      "prompt": "According to VSEPR theory, which electron repulsion is strongest in water?",
+      "options": [
+        "Bond pair – Bond pair",
+        "Lone pair – Bond pair",
+        "Lone pair – Lone pair"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Lone Pair – Lone Pair repulsion is the strongest because lone pairs are held by only one atomic nucleus and occupy greater spatial volume."
+    }
+  ]
+}

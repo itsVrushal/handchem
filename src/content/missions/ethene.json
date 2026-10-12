@@ -1,0 +1,42 @@
+{
+  "id": "ethene",
+  "title": "Ethene (C₂H₄) — Planar Double Bonds",
+  "classLevel": 10,
+  "ncertRef": "Class 10 Chapter 4",
+  "estimatedMinutes": 4,
+  "description": "Investigate unsaturated alkenes, Sp2 hybridization, and why double bonds lock atoms into a flat plane.",
+  "moleculeId": "c2h4",
+  "badge": "🌿",
+  "steps": [
+    {
+      "id": "c2h4_1",
+      "type": "predict",
+      "prompt": "Ethene contains a C=C double bond. How does the double bond affect rotation of the CH₂ groups around the carbon-carbon axis?",
+      "options": [
+        "Free rotation like a spinning propeller",
+        "Rigid / locked in a single flat plane",
+        "Wobbly oscillation"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Correct! The pi (π) bond in the double bond requires sideways overlap of unhybridized p-orbitals, preventing free rotation and locking all 6 atoms into a single plane."
+    },
+    {
+      "id": "c2h4_2",
+      "type": "measure",
+      "prompt": "Rotate the ethene molecule so you view it edge-on. Confirm that all six atoms align along a flat sheet.",
+      "explanation": "Sp2 hybridization produces trigonal planar geometry around each carbon with bond angles very close to 120°."
+    },
+    {
+      "id": "c2h4_3",
+      "type": "quiz",
+      "prompt": "What chemical test distinguishes unsaturated hydrocarbons like ethene from saturated alkanes?",
+      "options": [
+        "Litmus paper turns blue",
+        "Decolorization of red-brown bromine water",
+        "Burning with a soot-free clear blue flame"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Ethene readily undergoes addition reactions across its double bond, quickly decolorizing bromine water from red-brown to colorless."
+    }
+  ]
+}

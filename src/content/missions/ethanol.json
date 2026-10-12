@@ -1,0 +1,42 @@
+{
+  "id": "ethanol",
+  "title": "Ethanol (C₂H₅OH) — The Hydroxyl Group",
+  "classLevel": 10,
+  "ncertRef": "Class 10 Chapter 4",
+  "estimatedMinutes": 4,
+  "description": "Examine alcohols, the polar -OH functional group, and its profound effect on properties.",
+  "moleculeId": "c2h5oh",
+  "badge": "🧪",
+  "steps": [
+    {
+      "id": "c2h5oh_1",
+      "type": "predict",
+      "prompt": "Ethanol has a 2-carbon ethane chain attached to an -OH group. What functional group gives it alcoholic properties?",
+      "options": [
+        "Carboxyl (-COOH)",
+        "Aldehyde (-CHO)",
+        "Hydroxyl (-OH)"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Correct! The -OH group is called the hydroxyl functional group, classifying the molecule as an alcohol."
+    },
+    {
+      "id": "c2h5oh_2",
+      "type": "measure",
+      "prompt": "Look closely at the oxygen atom connecting the carbon chain to the terminal hydrogen. Notice its bent C-O-H geometry (108.5°).",
+      "explanation": "Just like in water, oxygen in ethanol has two non-bonding lone pairs that bend the C-O-H angle."
+    },
+    {
+      "id": "c2h5oh_3",
+      "type": "quiz",
+      "prompt": "Why is ethanol completely miscible with water while ethane gas is insoluble?",
+      "options": [
+        "Ethanol molecules are much lighter",
+        "The polar -OH group forms intermolecular hydrogen bonds with water",
+        "Ethanol has ionic charges"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The strongly electronegative oxygen atom creates a polar O-H bond capable of forming hydrogen bonds with neighboring water molecules."
+    }
+  ]
+}

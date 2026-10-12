@@ -1,0 +1,42 @@
+{
+  "id": "butane_isomers",
+  "title": "Isomers of Butane (C₄H₁₀) — Structural Isomerism",
+  "classLevel": 10,
+  "ncertRef": "Class 10 Chapter 4",
+  "estimatedMinutes": 5,
+  "description": "Discover how identical chemical formulas can produce completely distinct molecular structures.",
+  "moleculeId": "ch4",
+  "badge": "🔀",
+  "steps": [
+    {
+      "id": "iso_1",
+      "type": "predict",
+      "prompt": "Butane has the chemical formula C₄H₁₀. How many structural isomers (different carbon chain arrangements) can be constructed?",
+      "options": [
+        "Only 1 (all alkanes are identical)",
+        "2 (straight-chain n-butane and branched isobutane)",
+        "5 (infinite ring conformations)"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Correct! Butane has exactly two structural isomers: normal butane (a straight chain of 4 carbons) and 2-methylpropane (isobutane, with a 3-carbon chain and a central methyl branch)."
+    },
+    {
+      "id": "iso_2",
+      "type": "measure",
+      "prompt": "Examine carbon's tetravalency (4 bonds). Each internal carbon bonds to 2 carbons and 2 hydrogens, while terminal carbons bond to 3 hydrogens.",
+      "explanation": "Compounds having identical molecular formulae but different structural arrangements are called structural isomers."
+    },
+    {
+      "id": "iso_3",
+      "type": "quiz",
+      "prompt": "Which isomer of butane has a lower boiling point and why?",
+      "options": [
+        "n-butane because it is longer",
+        "Isobutane because branching creates a spherical shape with smaller surface area and weaker van der Waals forces",
+        "Both boil at exactly the same temperature"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Isobutane is more compact and globular, reducing contact surface area and decreasing intermolecular van der Waals forces, which lowers its boiling point (-11.7 °C vs -0.5 °C for n-butane)."
+    }
+  ]
+}

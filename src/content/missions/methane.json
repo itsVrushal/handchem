@@ -1,0 +1,42 @@
+{
+  "id": "methane",
+  "title": "Methane (CH₄) — Carbon Tetravalency",
+  "classLevel": 10,
+  "ncertRef": "Class 10 Chapter 4",
+  "estimatedMinutes": 3,
+  "description": "Explore the foundational building block of organic chemistry with perfect tetrahedral symmetry.",
+  "moleculeId": "ch4",
+  "badge": "🔥",
+  "steps": [
+    {
+      "id": "ch4_1",
+      "type": "predict",
+      "prompt": "Carbon has 4 valence electrons and forms 4 single covalent bonds with hydrogen. In 3D space, what angle keeps all 4 bonds furthest apart?",
+      "options": [
+        "90° (Square planar)",
+        "109.5° (Tetrahedral)",
+        "120° (Trigonal planar)"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Excellent! In three-dimensional space, four equidistant charge clouds point toward the corners of a regular tetrahedron with 109.5° angles."
+    },
+    {
+      "id": "ch4_2",
+      "type": "measure",
+      "prompt": "Rotate methane in 3D using your hand or mouse to see that no matter how you turn it, every H-C-H angle is identical.",
+      "explanation": "Because all four bonds are identical and there are no lone pairs, methane exhibits perfect Sp3 tetrahedral symmetry."
+    },
+    {
+      "id": "ch4_3",
+      "type": "quiz",
+      "prompt": "What is the valency of carbon in all saturated hydrocarbons (alkanes)?",
+      "options": [
+        "2",
+        "4",
+        "6"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Carbon is tetravalent (valency = 4), which allows it to form vast chains and rings of organic compounds through catenation."
+    }
+  ]
+}

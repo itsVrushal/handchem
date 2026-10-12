@@ -52,6 +52,14 @@ export class MoleculeSelector {
     }
   }
 
+  public setMolecule(mol: MoleculeData): void {
+    const idx = MOLECULES.findIndex((m) => m.id.toLowerCase() === mol.id.toLowerCase());
+    if (idx !== -1) {
+      this.currentIndex = idx;
+    }
+    this.updateLabel();
+  }
+
   private update(): void {
     const mol = this.getCurrent();
     this.updateLabel();

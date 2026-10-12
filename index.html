@@ -43,6 +43,14 @@
 
         <!-- Quick Action Bar -->
         <div class="header-actions">
+          <button id="btn-missions-toggle" class="btn btn-action btn-action-accent" data-target-id="btn-missions-toggle" title="Open NCERT Learning Missions">
+            <span class="btn-icon" aria-hidden="true">📚</span>
+            Missions
+          </button>
+          <button id="btn-build-toggle" class="btn btn-action" data-target-id="btn-build-toggle" title="Toggle Build Mode with Valency Checking">
+            <span class="btn-icon" aria-hidden="true">🔨</span>
+            <span id="build-mode-label">Build Mode</span>
+          </button>
           <button id="btn-rep-toggle" class="btn btn-action" data-target-id="btn-rep-toggle" title="Switch Ball-and-Stick / Space-Filling">
             <span class="btn-icon" aria-hidden="true">⚪</span>
             <span id="rep-label">Ball &amp; Stick</span>
@@ -149,6 +157,30 @@
 
       <!-- ── Status Toast ───────────────────────────────── -->
       <div id="status-message" class="status-message" aria-live="polite" hidden></div>
+
+      <!-- ── Active Mission Card (Top-Right) ─────────────── -->
+      <div id="mission-card" class="mission-card" hidden aria-label="Active Mission Step"></div>
+
+      <!-- ── Mission Selector Modal ──────────────────────── -->
+      <div id="mission-selector-modal" class="mission-selector-modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-missions-title"></div>
+
+      <!-- ── Build Mode Palette (Bottom-Center) ──────────── -->
+      <div id="build-toolbar" class="build-toolbar" hidden aria-label="Build Mode Palette">
+        <div class="build-toolbar-card">
+          <div class="build-toolbar-header">
+            <span class="build-mode-title">🔨 Build Mode</span>
+            <span id="valency-status-badge" class="valency-status-badge valency-ok">Valency Check: Saturated ✓</span>
+          </div>
+          <div class="build-palette">
+            <button id="btn-add-c" class="btn btn-palette" data-target-id="btn-add-c" title="Add Carbon (Valency 4)">+ C</button>
+            <button id="btn-add-h" class="btn btn-palette" data-target-id="btn-add-h" title="Add Hydrogen (Valency 1)">+ H</button>
+            <button id="btn-add-o" class="btn btn-palette" data-target-id="btn-add-o" title="Add Oxygen (Valency 2)">+ O</button>
+            <button id="btn-add-n" class="btn btn-palette" data-target-id="btn-add-n" title="Add Nitrogen (Valency 3)">+ N</button>
+            <button id="btn-clear-build" class="btn btn-palette btn-palette-danger" data-target-id="btn-clear-build" title="Reset Canvas">🗑️ Clear</button>
+          </div>
+          <p class="build-hint">Click two atoms in sequence to connect or remove a bond. Overvalent atoms glow red!</p>
+        </div>
+      </div>
 
       <!-- ── Camera Preview ─────────────────────────────── -->
       <div id="camera-preview" class="camera-preview" hidden aria-label="Hand camera preview">

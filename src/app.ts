@@ -17,7 +17,11 @@ import { ChemHUD } from './ui/hud';
 import { EnergyGraph } from './ui/energyGraph';
 import { MoleculeSelector } from './ui/moleculeSelector';
 import { MoleculePhysics } from './chem/physics';
-import { getDefaultMolecule } from './content/molecules';
+import { getDefaultMolecule, getMoleculeById } from './content/molecules';
+import { ProgressManager } from './chem/progress';
+import { MissionRunner } from './ui/missionRunner';
+import { MissionModal } from './ui/missionModal';
+import { MoleculeBuilder } from './chem/builder';
 import type { MoleculeData, RepresentationMode } from './chem/types';
 
 const INFERENCE_INTERVAL_MS = 1000 / 15; // 15 fps inference throttle
@@ -39,6 +43,12 @@ export class App {
   private energyGraph: EnergyGraph;
   private moleculeSelector: MoleculeSelector;
   private currentMode: RepresentationMode = 'ballAndStick';
+
+  // Phase 3 Learning Layer Components
+  private readonly progress = new ProgressManager();
+  private readonly missionRunner: MissionRunner;
+  private readonly missionModal: MissionModal;
+  private readonly builder: MoleculeBuilder;
 
   private rafId = 0;
   private lastInferenceTime = -Infinity;
@@ -89,6 +99,53 @@ export class App {
       (mol) => this.switchMolecule(mol),
     );
 
+    // Initialize Phase 3 Learning Layer Modules
+    this.builder = new MoleculeBuilder(initialMol);
+    this.missionRunner = new MissionRunner(this.progress, this.buttons);
+    this.missionRunner.setPhysics(this.physics);
+    this.missionModal = new MissionModal(this.progress, this.buttons);
+
+    this.missionModal.onSelectMission = (missionId) => {
+      this.missionRunner.startMission(missionId);
+    };
+
+    this.missionRunner.onSelectMolecule = (moleculeId) => {
+      const mol = getMoleculeById(moleculeId);
+      if (mol) {
+        this.switchMolecule(mol);
+        this.moleculeSelector.setMolecule(mol);
+      }
+    };
+
+    this.missionRunner.onOpenSelector = () => {
+      this.missionModal.open();
+    };
+
+    this.builder.onMoleculeUpdated = (updatedMol, valencyReport) => {
+      this.physics = new MoleculePhysics(updatedMol);
+      this.scene.setMolecule(updatedMol, this.currentMode);
+      this.hud.setMolecule(updatedMol);
+      this.missionRunner.setPhysics(this.physics);
+
+      // Overvalent atoms glow red!
+      this.scene.setOvervalentAtoms(valencyReport.overvalentAtomIds);
+
+      const badge = document.getElementById('valency-status-badge');
+      if (badge) {
+        if (valencyReport.hasOvervalentAtoms) {
+          badge.className = 'valency-status-badge valency-warn';
+          badge.textContent = `⚠️ Overvalent Atom (${valencyReport.overvalentAtomIds.join(',')})!`;
+          this.showStatus('Valency warning: Atom has too many bonds and glows red!', 'warning', 2500);
+        } else if (valencyReport.isValidMolecule) {
+          badge.className = 'valency-status-badge valency-ok';
+          badge.textContent = 'Valency Check: Saturated ✓';
+        } else {
+          badge.className = 'valency-status-badge valency-ok';
+          badge.textContent = 'Valency Check: Stable';
+        }
+      }
+    };
+
     this.wireUI();
     this.wirePhysics();
   }
@@ -97,6 +154,8 @@ export class App {
     this.physics = new MoleculePhysics(mol);
     this.scene.setMolecule(mol, this.currentMode);
     this.hud.setMolecule(mol);
+    this.builder.setMolecule(mol);
+    this.missionRunner.setPhysics(this.physics);
     const restLen = this.physics.bondRestLengths[0] ?? 1.0;
     this.energyGraph.setRestLength(restLen);
   }
@@ -124,17 +183,70 @@ export class App {
 
   private wireUI(): void {
     // Register header and action buttons
+    const missionsToggle = document.getElementById('btn-missions-toggle') as HTMLButtonElement;
+    const buildToggle = document.getElementById('btn-build-toggle') as HTMLButtonElement;
     const repToggle = document.getElementById('btn-rep-toggle') as HTMLButtonElement;
     const resetBtn = document.getElementById('btn-reset-structure') as HTMLButtonElement;
     const debugToggle = document.getElementById('toggle-debug') as HTMLButtonElement;
     const molPrev = document.getElementById('mol-prev') as HTMLButtonElement;
     const molNext = document.getElementById('mol-next') as HTMLButtonElement;
 
+    if (missionsToggle) this.buttons.register('btn-missions-toggle', missionsToggle);
+    if (buildToggle) this.buttons.register('btn-build-toggle', buildToggle);
     if (repToggle) this.buttons.register('btn-rep-toggle', repToggle);
     if (resetBtn) this.buttons.register('btn-reset-structure', resetBtn);
     if (debugToggle) this.buttons.register('toggle-debug', debugToggle);
     if (molPrev) this.buttons.register('mol-prev', molPrev);
     if (molNext) this.buttons.register('mol-next', molNext);
+
+    // Missions Selector Modal Toggle
+    missionsToggle?.addEventListener('click', () => {
+      this.missionModal.toggle();
+    });
+
+    // Build Mode Toggle
+    buildToggle?.addEventListener('click', () => {
+      const active = !this.builder.isBuildModeActive();
+      this.builder.setBuildMode(active);
+      const toolbar = document.getElementById('build-toolbar');
+      if (toolbar) toolbar.hidden = !active;
+      const label = document.getElementById('build-mode-label');
+      if (label) label.textContent = active ? 'Exit Build' : 'Build Mode';
+      buildToggle.classList.toggle('btn-action-accent', active);
+      this.showStatus(
+        active ? 'Build Mode: Click + elements or click atoms to form/cycle chemical bonds' : 'Switched to Explore Mode',
+        'info',
+        2500,
+      );
+    });
+
+    // Build Palette Buttons
+    const addC = document.getElementById('btn-add-c') as HTMLButtonElement;
+    const addH = document.getElementById('btn-add-h') as HTMLButtonElement;
+    const addO = document.getElementById('btn-add-o') as HTMLButtonElement;
+    const addN = document.getElementById('btn-add-n') as HTMLButtonElement;
+    const clearBuild = document.getElementById('btn-clear-build') as HTMLButtonElement;
+
+    if (addC) {
+      this.buttons.register('btn-add-c', addC);
+      addC.addEventListener('click', () => this.builder.addAtom('C'));
+    }
+    if (addH) {
+      this.buttons.register('btn-add-h', addH);
+      addH.addEventListener('click', () => this.builder.addAtom('H'));
+    }
+    if (addO) {
+      this.buttons.register('btn-add-o', addO);
+      addO.addEventListener('click', () => this.builder.addAtom('O'));
+    }
+    if (addN) {
+      this.buttons.register('btn-add-n', addN);
+      addN.addEventListener('click', () => this.builder.addAtom('N'));
+    }
+    if (clearBuild) {
+      this.buttons.register('btn-clear-build', clearBuild);
+      clearBuild.addEventListener('click', () => this.builder.clearAll());
+    }
 
     // Representation Toggle Click
     repToggle?.addEventListener('click', () => {
@@ -171,7 +283,24 @@ export class App {
           const atomId = parseInt(hit.replace('atom-', ''), 10);
           this.scene.highlightAtom(atomId);
         } else if (this.activeGrabbedAtomId === null) {
-          this.scene.highlightAtom(null);
+          const selId = this.builder.getSelectedAtomId();
+          this.scene.highlightAtom(selId);
+        }
+      }
+    });
+
+    // Atom click handling for Build Mode
+    this.bus.on('click', (e) => {
+      if (this.builder.isBuildModeActive()) {
+        const hit = this.scene.hitTest(e.position.x, e.position.y);
+        if (hit && hit.startsWith('atom-')) {
+          const atomId = parseInt(hit.replace('atom-', ''), 10);
+          this.builder.handleAtomClicked(atomId);
+          const selId = this.builder.getSelectedAtomId();
+          this.scene.highlightAtom(selId);
+          if (selId !== null) {
+            this.showStatus(`Atom ${selId} selected. Click a 2nd atom to bond!`, 'info', 2500);
+          }
         }
       }
     });
@@ -255,6 +384,9 @@ export class App {
 
     // ── Live Measurements & Energy Graph ────────────────────────────
     this.updateLiveMeasurements();
+
+    // ── Live Mission Goal Check ─────────────────────────────────────
+    this.missionRunner.checkLiveGoals();
 
     // ── Button hover hit-test & magnetic ease ───────────────────────
     const cursorPos = this.cursor.getDisplayPos();

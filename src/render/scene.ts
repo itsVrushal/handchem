@@ -129,6 +129,12 @@ export class Scene {
     }
   }
 
+  public setOvervalentAtoms(ids: number[]): void {
+    if (this.moleculeMesh) {
+      this.moleculeMesh.setOvervalentAtoms(ids);
+    }
+  }
+
   // ── Raycasting & Coordinates ────────────────────────────────────
 
   private toNDC(nx: number, ny: number): THREE.Vector2 {

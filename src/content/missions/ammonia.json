@@ -1,0 +1,45 @@
+{
+  "id": "ammonia",
+  "title": "Ammonia (NH₃) — Trigonal Pyramidal",
+  "classLevel": 11,
+  "ncertRef": "Class 11 Chapter 4",
+  "estimatedMinutes": 4,
+  "description": "Understand the trigonal pyramidal geometry resulting from nitrogen's single lone pair.",
+  "moleculeId": "nh3",
+  "badge": "⚡",
+  "steps": [
+    {
+      "id": "nh3_1",
+      "type": "predict",
+      "prompt": "Nitrogen has 5 valence electrons. It forms 3 single bonds with H and keeps 1 lone pair. What is the geometry?",
+      "options": [
+        "Planar Triangle (120°)",
+        "Trigonal Pyramidal (107°)",
+        "Tetrahedral (109.5°)"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Correct! The single lone pair at the apex of the nitrogen atom pushes the three N-H bonds downward into a pyramidal tent, compressing the angle to 107°."
+    },
+    {
+      "id": "nh3_2",
+      "type": "measure",
+      "prompt": "Rotate the molecule in 3D by dragging empty space and observe the 3D tripod arrangement of the hydrogen atoms.",
+      "target": {
+        "expectedAngleDeg": [100, 115]
+      },
+      "explanation": "Notice how all three hydrogen atoms lie in one plane while the nitrogen atom sits elevated above them like the tip of a pyramid."
+    },
+    {
+      "id": "nh3_3",
+      "type": "quiz",
+      "prompt": "Why is the bond angle in NH₃ (107°) smaller than in CH₄ (109.5°)?",
+      "options": [
+        "Hydrogen atoms attract each other",
+        "Lone pair – bond pair repulsion is greater than bond pair – bond pair repulsion",
+        "Nitrogen is smaller than carbon"
+      ],
+      "correctAnswer": 1,
+      "explanation": "A lone pair spreads out more than a bonding pair, exerting greater repulsion that forces adjacent bonding pairs closer together."
+    }
+  ]
+}

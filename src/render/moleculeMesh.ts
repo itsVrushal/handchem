@@ -26,6 +26,14 @@ export class MoleculeMesh {
   private atomMeshes: THREE.Mesh[] = [];
   private bondGroups: BondMeshGroup[] = [];
   private highlightSphere: THREE.Mesh;
+  private overvalentHaloGroup = new THREE.Group();
+  private overvalentIds = new Set<number>();
+  private overvalentHaloMat = new THREE.MeshBasicMaterial({
+    color: 0xef4444, // Vivid crimson-red warning glow
+    wireframe: true,
+    transparent: true,
+    opacity: 0.85,
+  });
 
   // Shared geometry templates
   private sphereGeom = new THREE.SphereGeometry(1, 32, 24);
@@ -53,6 +61,7 @@ export class MoleculeMesh {
     this.highlightSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), haloMat);
     this.highlightSphere.visible = false;
     this.group.add(this.highlightSphere);
+    this.group.add(this.overvalentHaloGroup);
 
     this.buildAtoms();
     this.buildBonds();
@@ -124,6 +133,18 @@ export class MoleculeMesh {
       if (pos && mesh) {
         mesh.position.set(pos[0], pos[1], pos[2]);
       }
+    }
+
+    // Update overvalent halo positions
+    let haloIdx = 0;
+    for (const atomId of this.overvalentIds) {
+      const idx = this.molecule.atoms.findIndex((a) => a.id === atomId);
+      const pos = positions[idx];
+      const halo = this.overvalentHaloGroup.children[haloIdx];
+      if (pos && halo) {
+        halo.position.set(pos[0], pos[1], pos[2]);
+      }
+      haloIdx++;
     }
 
     // 2. Update bonds
@@ -230,6 +251,25 @@ export class MoleculeMesh {
     }
   }
 
+  public setOvervalentAtoms(ids: number[]): void {
+    this.overvalentIds = new Set(ids);
+    while (this.overvalentHaloGroup.children.length > 0) {
+      this.overvalentHaloGroup.remove(this.overvalentHaloGroup.children[0]!);
+    }
+
+    for (const atomId of ids) {
+      const idx = this.molecule.atoms.findIndex((a) => a.id === atomId);
+      if (idx !== -1 && this.atomMeshes[idx]) {
+        const mesh = this.atomMeshes[idx]!;
+        const r = getAtomRenderRadius(this.molecule.atoms[idx]!.element, this.mode) * 1.45;
+        const halo = new THREE.Mesh(this.sphereGeom, this.overvalentHaloMat);
+        halo.scale.set(r, r, r);
+        halo.position.copy(mesh.position);
+        this.overvalentHaloGroup.add(halo);
+      }
+    }
+  }
+
   public getAtomMeshes(): THREE.Mesh[] {
     return this.atomMeshes;
   }
@@ -241,6 +281,7 @@ export class MoleculeMesh {
     this.elementMaterials.forEach((m) => m.dispose());
     (this.highlightSphere.material as THREE.Material).dispose();
     this.highlightSphere.geometry.dispose();
+    this.overvalentHaloMat.dispose();
     while (this.group.children.length > 0) {
       this.group.remove(this.group.children[0]!);
     }

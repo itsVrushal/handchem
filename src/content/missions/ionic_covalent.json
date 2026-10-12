@@ -1,0 +1,42 @@
+{
+  "id": "ionic_covalent",
+  "title": "Ionic vs Covalent — Electron Sharing vs Transfer",
+  "classLevel": 9,
+  "ncertRef": "Class 9 Chapter 4 / Class 10 Chapter 3",
+  "estimatedMinutes": 4,
+  "description": "Compare sodium chloride (ionic lattice) with molecular covalent bonds like HCl and H₂.",
+  "moleculeId": "nacl",
+  "badge": "🧂",
+  "steps": [
+    {
+      "id": "ic_1",
+      "type": "predict",
+      "prompt": "In sodium chloride (NaCl), how do sodium and chlorine achieve stable noble gas octets?",
+      "options": [
+        "Sodium donates 1 electron to chlorine, forming Na⁺ and Cl⁻ ions",
+        "They share an electron pair equally",
+        "Chlorine donates electrons to sodium"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Correct! Sodium (2,8,1) readily loses its valence electron to chlorine (2,8,7). Electrostatic attraction between Na⁺ and Cl⁻ forms an ionic bond."
+    },
+    {
+      "id": "ic_2",
+      "type": "measure",
+      "prompt": "Inspect the NaCl ionic unit. Notice the large difference in size between the compact sodium cation and the large chloride anion.",
+      "explanation": "Losing an entire electron shell makes Na⁺ much smaller than the original Na atom, while adding an electron expands Cl⁻ due to electron-electron repulsion."
+    },
+    {
+      "id": "ic_3",
+      "type": "quiz",
+      "prompt": "Why do solid ionic compounds like NaCl have very high melting points compared to covalent molecules like methane?",
+      "options": [
+        "Ionic bonds are covalent bonds",
+        "Strong non-directional electrostatic forces extend throughout an entire 3D crystal lattice",
+        "Ionic compounds contain heavy metal nuclei"
+      ],
+      "correctAnswer": 1,
+      "explanation": "In an ionic solid, every ion is surrounded by oppositely charged neighbors in a continuous crystal lattice, requiring immense thermal energy to break apart."
+    }
+  ]
+}
