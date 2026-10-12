@@ -70,6 +70,35 @@ Explore 12 fundamental molecules from Classes 9 through 12, each built with accu
 
 ---
 
+## 🎓 Phase 3: Learning Layer (NCERT 9–12)
+
+### 8 Guided Interactive Missions
+Accessible via the **📚 Missions** button in the header, each mission presents a step-by-step **Predict-Then-Reveal** flow followed by interactive measurement and conceptual validation:
+1. **Water ($H_2O$) — Why is Water Bent?** (Class 10/11)  
+   Predict bent geometry vs linear; explore lone pair electrostatic repulsion; bond angle 104.5°.
+2. **Carbon Dioxide ($CO_2$) — Linear Double Bonds** (Class 10/11)  
+   Explore carbon's tetravalency forming two double bonds; linear 180° geometry with zero lone pairs on carbon.
+3. **Ammonia ($NH_3$) — Trigonal Pyramidal** (Class 11)  
+   Nitrogen's 1 lone pair pushing three N-H bonds downward into a pyramidal tent (107.8°).
+4. **Methane ($CH_4$) — Carbon Tetravalency** (Class 10/11)  
+   Perfect $sp^3$ tetrahedral geometry at 109.5°; carbon's foundation in organic chemistry.
+5. **Ethene ($C_2H_4$) — Planar Double Bonds** (Class 10/11)  
+   Unsaturated alkenes; $C=C$ pi bond preventing rotation and locking all 6 atoms into a single plane.
+6. **Ethanol ($C_2H_5OH$) — The Hydroxyl Group** (Class 10/11)  
+   Functional groups; polar $-OH$ group enabling hydrogen bonding with water.
+7. **Ionic vs Covalent — Electron Sharing vs Transfer** (Class 9/10)  
+   Compare $NaCl$ electrostatic crystal lattices and electron transfer with covalent molecular sharing.
+8. **Isomers of Butane ($C_4H_{10}$) — Structural Isomerism** (Class 10/11)  
+   Straight-chain $n$-butane vs branched isobutane (2-methylpropane); how branching alters boiling points.
+
+### Interactive Build Mode & Real-Time Valency Checking
+- **Toggle Build Mode**: Click **🔨 Build Mode** in the header to activate the atom building palette (`+ C`, `+ H`, `+ O`, `+ N`).
+- **Dynamic Bond Construction**: Click two atoms in sequence to form a bond; click repeatedly to cycle between single, double, and triple bonds.
+- **Overvalency Detection**: If an atom exceeds its maximum chemical valency (e.g. Carbon with 5 bonds or Hydrogen with 2 bonds), the atom **glows bright pulsing red** in 3D and a real-time warning appears in the HUD.
+- **Client-Side Progress Persistence**: All completed missions and quiz scores are preserved locally in `localStorage` without tracking or logins.
+
+---
+
 ## ✋ How to Use Gestures
 
 All hand tracking is computed locally in real time using `@mediapipe/tasks-vision`.
@@ -77,25 +106,26 @@ All hand tracking is computed locally in real time using `@mediapipe/tasks-visio
 | Gesture | Action | How It Works |
 |---|---|---|
 | **Move Cursor** | Point & Hover | Keep palm facing camera. The **index fingertip** controls the glowing virtual cursor. |
-| **Magnetic Pull** | Snap to Atoms | When moving near an atom or button, the cursor smoothly eases into the target for effortless selection. |
-| **Pinch Click** | Click buttons | Rapidly pinch **thumb and index fingertip** together and release within 350 ms. |
-| **Dwell Click** | Hands-free click | Hover the cursor over any interactive button for **800 ms**; the radial indicator ring will fill and trigger a click. |
-| **Pinch & Drag Atom** | Stretch Chemical Bonds | Pinch directly on an atom and drag; moves the atom along a camera-parallel plane to observe mechanical strain. |
-| **Orbit Scene** | Rotate 3D View | Drag in empty canvas space to orbit around the molecule. |
-| **Two-Hand Zoom & Roll** | Dolly / Roll Camera | Pinch with both hands simultaneously: changing distance between hands zooms in/out; changing angle rolls the view. |
+| **Magnetic Pull** | Snap to Targets | When moving near an atom or button, the cursor smoothly snaps into the target center. |
+| **Closed Fist Tap** | Click buttons | Make a quick **closed fist** and release within 380 ms to activate any button or answer choice. |
+| **Hold Closed Fist** | Grab & Drag Atoms | Make and hold a **closed fist** on an atom to grab and stretch chemical bonds in 3D space. |
+| **Pinch Click / Drag** | Fallback Grip | Pinch **thumb and index fingertip** together as an alternative grip. |
+| **Dwell Click** | Hands-free click | Hover the cursor steadily over any button for **500 ms**; the radial green ring will fill and fire a click. Includes a 160 ms jitter grace timer. |
+| **Orbit Scene** | Rotate 3D View | Drag in empty canvas space to orbit around the molecule in 3D. |
+| **Two-Hand Zoom & Roll** | Dolly / Roll Camera | Grip with both hands simultaneously: changing distance zooms in/out; changing angle rolls the view. |
 | **Clutching** | Re-center cursor | Move hand out of camera frame, reposition comfortably, and re-enter. Cursor resumes smoothly from its last position. |
 
 ### Quiet Mouse Fallback
-If you don't have a webcam or choose to skip camera access, click **"or try with mouse / touch fallback"** on the startup screen. Every feature, button, dwell ring, atom grabbing, and 3D interaction functions identically with a regular mouse or touchpad.
+If you don't have a webcam or choose to skip camera access, click **"or try with mouse / touch fallback"** on the startup screen. Every feature, mission, button, dwell ring, atom grabbing, and 3D interaction functions identically with a regular mouse or touchpad.
 
 ---
 
 ## 🛠️ Debug Panel
 
-Press the **`D`** key or click the **🛠️ Debug** button in the top navigation bar to toggle the real-time telemetry panel:
+Press the **`** (backtick) or **`F2`** key, or click the **🛠️ Debug** button in the top navigation bar to toggle the real-time telemetry panel:
 - **Render FPS** & **Inference latency** (ms)
 - **State Machine**: Live state (`idle`, `hovering`, `pinching`, `dragging`)
-- **Pinch Ratio** & hysteresis bars
+- **Closed Fist Ratio** & **Pinch Ratio** live progress bars
 - **1€ Filter tuning**: Live sliders for `minCutoff` and `beta`
 - **Recent Event Log**: Live stream of input bus events (`move`, `hover`, `click`, `dragStart`, `drag`, `dragEnd`)
 
