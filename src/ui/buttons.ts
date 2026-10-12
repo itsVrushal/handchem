@@ -1,8 +1,8 @@
 /**
  * buttons.ts
- * Manages large gesture-target buttons: hit-testing, hover state visual
- * feedback, and dwell-click / gesture-click event emission.
- * Forwarded to DOM element click handlers so all UI responds identically
+ * Manages gesture-target buttons: hit-testing, hover state visual
+ * feedback, dwell-click, and closed-fist/pinch gesture-click event dispatching.
+ * Forwards cleanly to DOM element click handlers so all UI responds identically
  * to gestures and real mouse clicks.
  */
 
@@ -18,45 +18,41 @@ export class ButtonManager {
   private currentHoverId: string | null = null;
   private bus: EventBus;
   private isDispatching = false; // prevents re-entrant loops between DOM and bus clicks
+  private lastClickedTargetId: string | null = null;
+  private lastClickTimestamp = 0;
 
   constructor(bus: EventBus) {
     this.bus = bus;
 
-    // Listen for click events to apply visual flash and trigger native DOM click if gesture-driven
+    // Listen for click events from gesture pipeline (e.g. quick fist/pinch tap)
     bus.on('click', (e) => {
-      let targetId = e.targetId;
+      if (this.isDispatching) return;
+      if (e.source !== 'gesture') return;
+
+      let targetId: string | null = e.targetId ?? null;
       if (!targetId) {
         if (this.currentHoverId) {
           targetId = this.currentHoverId;
         } else if (e.position) {
-          const px = e.position.x * window.innerWidth;
-          const py = e.position.y * window.innerHeight;
-          const pad = 24;
-          for (const btn of this.buttons) {
-            const r = btn.el.getBoundingClientRect();
-            if (
-              px >= r.left - pad &&
-              px <= r.right + pad &&
-              py >= r.top - pad &&
-              py <= r.bottom + pad
-            ) {
-              targetId = btn.id;
-              break;
-            }
-          }
+          targetId = this.findButtonAt(e.position.x * window.innerWidth, e.position.y * window.innerHeight);
         }
       }
 
       if (targetId) {
-        this.flashActive(targetId);
-        if (e.source === 'gesture' && !this.isDispatching) {
-          const btn = this.buttons.find((b) => b.id === targetId);
-          if (btn) {
-            this.isDispatching = true;
-            btn.el.click();
-            this.isDispatching = false;
-          }
-        }
+        this.triggerGestureClick(targetId);
+      }
+    });
+
+    // When a grab/closed-fist/drag gesture begins while hovering a button,
+    // intercept it immediately as an instant button click rather than starting a 3D orbit!
+    bus.on('dragStart', (e) => {
+      const targetId =
+        this.currentHoverId ??
+        (e.position ? this.findButtonAt(e.position.x * window.innerWidth, e.position.y * window.innerHeight) : null);
+      if (targetId) {
+        // Tag targetId on the event so scene.ts won't treat it as camera orbit
+        e.targetId = targetId;
+        this.triggerGestureClick(targetId);
       }
     });
   }
@@ -84,6 +80,41 @@ export class ButtonManager {
   }
 
   /**
+   * Helper to find which active/visible button is at coordinates (px, py).
+   * Picks the closest button center within tolerance.
+   */
+  findButtonAt(px: number, py: number): string | null {
+    let bestId: string | null = null;
+    let bestDist = Infinity;
+
+    for (const btn of this.buttons) {
+      if (!btn.el.isConnected || btn.el.offsetParent === null) continue;
+      const r = btn.el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) continue;
+
+      const pad = 12;
+      const insidePadded =
+        px >= r.left - pad &&
+        px <= r.right + pad &&
+        py >= r.top - pad &&
+        py <= r.bottom + pad;
+
+      if (insidePadded) {
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const strictlyInside = px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
+        const dist = strictlyInside ? 0 : Math.hypot(px - cx, py - cy);
+
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestId = btn.id;
+        }
+      }
+    }
+    return bestId;
+  }
+
+  /**
    * Call once per frame with the normalised cursor position (0–1).
    * Returns the hovered button's id and DOM rect for the cursor's magnet.
    */
@@ -93,75 +124,124 @@ export class ButtonManager {
     let hoverId: string | null = null;
     let magnetRect: DOMRect | null = null;
 
+    let bestBtn: ButtonRecord | null = null;
+    let bestDist = Infinity;
+    let bestRect: DOMRect | null = null;
+
     for (const btn of this.buttons) {
+      // Skip disconnected or invisible/hidden buttons
+      if (!btn.el.isConnected || btn.el.offsetParent === null) {
+        btn.el.classList.remove('hovered');
+        continue;
+      }
       const r = btn.el.getBoundingClientRect();
-      // Expand hit area generously (18px) for easier hovering with hands
-      const pad = 18;
-      const inside =
+      if (r.width === 0 || r.height === 0) {
+        btn.el.classList.remove('hovered');
+        continue;
+      }
+
+      // Check strictly inside first, then padded
+      const strictlyInside =
+        px >= r.left &&
+        px <= r.right &&
+        py >= r.top &&
+        py <= r.bottom;
+
+      // 10px pad matches flex gap to avoid overlapping adjacent buttons
+      const pad = 10;
+      const insidePadded =
         px >= r.left - pad &&
         px <= r.right + pad &&
         py >= r.top - pad &&
         py <= r.bottom + pad;
 
-      btn.el.classList.toggle('hovered', inside);
+      if (insidePadded) {
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const dist = strictlyInside ? 0 : Math.hypot(px - cx, py - cy);
 
-      if (inside) {
-        hoverId = btn.id;
-        magnetRect = r;
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestBtn = btn;
+          bestRect = r;
+        }
       }
+    }
+
+    if (bestBtn && bestRect) {
+      hoverId = bestBtn.id;
+      magnetRect = bestRect;
+    }
+
+    // Toggle .hovered class: ONLY the single winning button gets hovered state
+    for (const btn of this.buttons) {
+      const isHovered = bestBtn !== null && btn.id === bestBtn.id;
+      btn.el.classList.toggle('hovered', isHovered);
     }
 
     // Emit hover event when hovered target changes
     if (hoverId !== this.currentHoverId) {
       this.currentHoverId = hoverId;
-      if (hoverId) {
-        const targetBtn = this.buttons.find((b) => b.id === hoverId);
-        if (targetBtn) {
-          const rect = targetBtn.el.getBoundingClientRect();
-          this.bus.emit({
-            type: 'hover',
-            position: {
-              x: (rect.left + rect.width / 2) / window.innerWidth,
-              y: (rect.top + rect.height / 2) / window.innerHeight,
-            },
-            targetId: hoverId,
-            timestamp: Date.now(),
-            source: 'gesture',
-          });
-        }
+      if (hoverId && bestRect) {
+        this.bus.emit({
+          type: 'hover',
+          position: {
+            x: (bestRect.left + bestRect.width / 2) / window.innerWidth,
+            y: (bestRect.top + bestRect.height / 2) / window.innerHeight,
+          },
+          targetId: hoverId,
+          timestamp: Date.now(),
+          source: 'gesture',
+        });
       }
     }
 
     return { hoverId, magnetRect };
   }
 
-  /** Called when dwell fires (from Cursor). Triggers DOM click and emits click event. */
-  fireDwell(targetId: string): void {
+  /**
+   * Safely dispatches a DOM click and notifies the EventBus without double-firing or recursion.
+   */
+  triggerGestureClick(targetId: string): void {
+    const now = Date.now();
+    // 320ms cooldown per target to prevent accidental double-clicks from hand tremor
+    if (this.lastClickedTargetId === targetId && now - this.lastClickTimestamp < 320) {
+      return;
+    }
+    this.lastClickedTargetId = targetId;
+    this.lastClickTimestamp = now;
+
     const btn = this.buttons.find((b) => b.id === targetId);
-    if (!btn) return;
-    const pos = this.getElCenter(btn.el);
+    if (!btn || !btn.el.isConnected || btn.el.offsetParent === null) return;
+
     this.flashActive(targetId);
 
-    this.bus.emit({
-      type: 'click',
-      position: pos,
-      targetId,
-      timestamp: Date.now(),
-      source: 'gesture',
-    });
-
-    if (!this.isDispatching) {
+    // Call native DOM click with isDispatching guarded
+    try {
       this.isDispatching = true;
       btn.el.click();
+      this.bus.emit({
+        type: 'click',
+        position: this.getElCenter(btn.el),
+        targetId,
+        timestamp: now,
+        source: 'gesture',
+      });
+    } finally {
       this.isDispatching = false;
     }
+  }
+
+  /** Called when dwell fires (from Cursor). */
+  fireDwell(targetId: string): void {
+    this.triggerGestureClick(targetId);
   }
 
   private flashActive(id: string): void {
     const btn = this.buttons.find((b) => b.id === id);
     if (!btn) return;
     btn.el.classList.add('active');
-    setTimeout(() => btn.el.classList.remove('active'), 220);
+    setTimeout(() => btn.el.classList.remove('active'), 240);
   }
 
   private getElCenter(el: HTMLElement): { x: number; y: number } {

@@ -30,8 +30,8 @@ export const DEFAULT_SM_CONFIG: StateMachineConfig = {
   pinchOffRatio: 0.45,
   fistOnRatio: 0.60,
   fistOffRatio: 0.75,
-  clickMaxMs: 380,
-  clickMaxRadius: 0.022,  // ~2.2% of screen width tolerance for hand micro-drift
+  clickMaxMs: 420,
+  clickMaxRadius: 0.038, // ~3.8% screen tolerance for natural finger curl drift
   debounceFrames: 2,
   confidenceMin: 0.6,
 };

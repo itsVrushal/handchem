@@ -125,10 +125,10 @@ export class Cursor {
         this.dwellFired = false;
         this.dwellLostTime = null;
       } else {
-        // Allow 160ms grace period so hand tremor/jitter doesn't immediately reset dwell
+        // Allow 200ms grace period so hand tremor/jitter doesn't immediately reset dwell
         if (this.dwellLostTime === null) {
           this.dwellLostTime = nowMs;
-        } else if (nowMs - this.dwellLostTime > 160) {
+        } else if (nowMs - this.dwellLostTime > 200) {
           this.dwellTargetId = null;
           this.dwellStart = null;
           this.dwellFired = false;
@@ -141,12 +141,13 @@ export class Cursor {
 
     let dwellProgress = 0;
     const activeTarget = hoveredTargetId ?? this.dwellTargetId;
-    if (this.dwellStart !== null && activeTarget) {
+    if (this.dwellStart !== null && activeTarget && !this.dwellFired) {
       dwellProgress = Math.min(1, (nowMs - this.dwellStart) / DWELL_MS);
-      if (dwellProgress >= 1 && !this.dwellFired) {
+      if (dwellProgress >= 1) {
         this.dwellFired = true;
         this.flashClick();
         this.onDwell?.(activeTarget);
+        dwellProgress = 0;
       }
     }
 
@@ -217,6 +218,17 @@ export class Cursor {
     if (dwellProgress > 0) {
       this.drawDwellRing(x, y, r + 7, dwellProgress);
     }
+
+    // Click flash ripple animation
+    if (this.flashClickTimer > Date.now()) {
+      const rem = Math.max(0, (this.flashClickTimer - Date.now()) / 220);
+      const burstR = r + 6 + (1 - rem) * 18;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, burstR, 0, Math.PI * 2);
+      this.ctx.strokeStyle = `rgba(16, 185, 129, ${rem * 0.95})`;
+      this.ctx.lineWidth = 3;
+      this.ctx.stroke();
+    }
   }
 
   private drawPinching(x: number, y: number): void {
@@ -266,7 +278,7 @@ export class Cursor {
 
   private flashClickTimer = 0;
   private flashClick(): void {
-    this.flashClickTimer = Date.now() + 120;
+    this.flashClickTimer = Date.now() + 220;
   }
 
   getDisplayPos(): { x: number; y: number } {
