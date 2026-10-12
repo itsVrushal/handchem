@@ -16,10 +16,10 @@ import { EventBus } from '../input/events';
 
 type CursorState = 'idle' | 'hover' | 'pinching' | 'dragging';
 
-const DWELL_MS = 800;
-const LERP_FACTOR = 0.25;          // interpolation toward target position per frame
-const MAGNET_RADIUS_PX = 90;       // px – within this range cursor snaps toward target
-const MAGNET_STRENGTH = 0.28;      // fraction to pull toward target centre each frame
+const DWELL_MS = 550; // ms – snappy, comfortable dwell time
+const LERP_FACTOR = 0.28;          // interpolation toward target position per frame
+const MAGNET_RADIUS_PX = 95;       // px – within this range cursor snaps toward target
+const MAGNET_STRENGTH = 0.32;      // fraction to pull toward target centre each frame
 
 export class Cursor {
   private readonly canvas: HTMLCanvasElement;
@@ -111,6 +111,11 @@ export class Cursor {
     this.displayX += (tx - this.displayX) * LERP_FACTOR;
     this.displayY += (ty - this.displayY) * LERP_FACTOR;
 
+    // If hovering a target and not in active grip/drag, enter hover display
+    if (hoveredTargetId && this.state !== 'dragging' && this.state !== 'pinching') {
+      this.state = 'hover';
+    }
+
     // ── Dwell logic ────────────────────────────────────────────────
     if (hoveredTargetId !== this.dwellTargetId) {
       this.dwellTargetId = hoveredTargetId;
@@ -123,6 +128,7 @@ export class Cursor {
       dwellProgress = Math.min(1, (nowMs - this.dwellStart) / DWELL_MS);
       if (dwellProgress >= 1 && !this.dwellFired) {
         this.dwellFired = true;
+        this.flashClick();
         this.onDwell?.(hoveredTargetId);
       }
     }
@@ -135,12 +141,16 @@ export class Cursor {
     const y = this.displayY;
     this.pulseT = nowMs / 1000;
 
-    switch (this.state) {
-      case 'idle':     this.drawIdle(x, y); break;
-      case 'hover':    this.drawHover(x, y, dwellProgress); break;
-      case 'pinching': this.drawPinching(x, y); break;
-      case 'dragging': this.drawDragging(x, y); break;
+    if (this.state === 'dragging') {
+      this.drawDragging(x, y);
+    } else if (this.state === 'pinching') {
+      this.drawPinching(x, y);
+    } else if (this.state === 'hover' || hoveredTargetId || dwellProgress > 0) {
+      this.drawHover(x, y, dwellProgress);
+    } else {
+      this.drawIdle(x, y);
     }
+
   }
 
   // ── Drawing helpers ─────────────────────────────────────────────

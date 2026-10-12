@@ -69,7 +69,55 @@ describe('extractFeatures', () => {
     const lms = makeLMs(); // all zeros → palmWidth ~0
     const feats = extractFeatures(lms);
     expect(feats.pinchRatio).toBe(1.0);
+    expect(feats.fistRatio).toBe(1.0);
     expect(Number.isFinite(feats.pinchRatio)).toBe(true);
+    expect(Number.isFinite(feats.fistRatio)).toBe(true);
+  });
+
+  it('computes fistRatio correctly for open palm vs closed fist', () => {
+    const openHand = makeLMs({
+      5:  { x: 0, y: 0, z: 0 },
+      8:  { x: 0, y: 0.12, z: 0 },
+      9:  { x: 0.03, y: 0, z: 0 },
+      12: { x: 0.03, y: 0.12, z: 0 },
+      13: { x: 0.06, y: 0, z: 0 },
+      16: { x: 0.06, y: 0.12, z: 0 },
+      17: { x: 0.1, y: 0, z: 0 },
+      20: { x: 0.1, y: 0.12, z: 0 },
+    });
+    const openFeats = extractFeatures(openHand);
+    expect(openFeats.fistRatio).toBeGreaterThan(1.0);
+    expect(openFeats.isFist).toBe(false);
+
+    const fistHand = makeLMs({
+      5:  { x: 0, y: 0, z: 0 },
+      8:  { x: 0, y: 0.03, z: 0 },
+      9:  { x: 0.03, y: 0, z: 0 },
+      12: { x: 0.03, y: 0.03, z: 0 },
+      13: { x: 0.06, y: 0, z: 0 },
+      16: { x: 0.06, y: 0.03, z: 0 },
+      17: { x: 0.1, y: 0, z: 0 },
+      20: { x: 0.1, y: 0.03, z: 0 },
+    });
+    const fistFeats = extractFeatures(fistHand);
+    expect(fistFeats.fistRatio).toBeLessThan(0.5);
+    expect(fistFeats.isFist).toBe(true);
+  });
+
+  it('does not classify pointing gesture as closed fist', () => {
+    const pointingHand = makeLMs({
+      5:  { x: 0, y: 0, z: 0 },
+      8:  { x: 0, y: 0.12, z: 0 },
+      9:  { x: 0.03, y: 0, z: 0 },
+      12: { x: 0.03, y: 0.02, z: 0 },
+      13: { x: 0.06, y: 0, z: 0 },
+      16: { x: 0.06, y: 0.02, z: 0 },
+      17: { x: 0.1, y: 0, z: 0 },
+      20: { x: 0.1, y: 0.02, z: 0 },
+    });
+    const feats = extractFeatures(pointingHand);
+    expect(feats.fistRatio).toBeGreaterThan(1.0);
+    expect(feats.isFist).toBe(false);
   });
 
   it('handles missing landmarks gracefully', () => {

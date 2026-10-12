@@ -43,6 +43,7 @@ const EXTRAPOLATE_MS = 200; // ms to extrapolate cursor after tracking loss
 export interface HandMetrics {
   palmWidth: number;
   pinchRatio: number;
+  fistRatio: number;
   handState: HandState;
   confidence: number;
   isTracking: boolean;
@@ -75,6 +76,7 @@ export class HandTracker {
   private metrics: HandMetrics = {
     palmWidth: 0,
     pinchRatio: 1,
+    fistRatio: 1,
     handState: 'idle',
     confidence: 0,
     isTracking: false,
@@ -185,6 +187,7 @@ export class HandTracker {
 
     const snap = {
       pinchRatio: feats.pinchRatio,
+      fistRatio: feats.fistRatio,
       cursorX: screen.x,
       cursorY: screen.y,
       confidence,
@@ -199,6 +202,7 @@ export class HandTracker {
     this.metrics = {
       palmWidth: feats.palmWidth,
       pinchRatio: feats.pinchRatio,
+      fistRatio: feats.fistRatio,
       handState: next.state,
       confidence,
       isTracking: true,

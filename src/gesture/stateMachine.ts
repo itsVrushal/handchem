@@ -1,22 +1,25 @@
 /**
  * stateMachine.ts
- * Pure per-hand state machine: idle → hovering → pinching → dragging.
+ * Pure per-hand state machine: idle → hovering → pinching/grabbing → dragging.
+ * Supports both pinch gesture and closed fist gesture for grabbing and clicking.
  * No DOM, no Three.js – fully unit-testable with simulated landmark streams.
  *
  * Transitions:
- *   idle/hovering  → pinching : pinchRatio < pinchOnRatio  (debounced)
- *   pinching       → dragging : pinch held > clickMaxMs OR drift > clickMaxRadius
- *   pinching       → hovering : pinchRatio > pinchOffRatio (debounced) → maybe CLICK
- *   dragging       → hovering : pinchRatio > pinchOffRatio (debounced) → DRAG_END
+ *   idle/hovering  → pinching : pinchRatio < pinchOnRatio OR fistRatio < fistOnRatio
+ *   pinching       → dragging : grab held > clickMaxMs OR drift > clickMaxRadius
+ *   pinching       → hovering : grab released (debounced) → emits CLICK
+ *   dragging       → hovering : grab released (debounced) → emits DRAG_END
  *   any            → idle     : confidence < min OR null features
  */
 
 export type HandState = 'idle' | 'hovering' | 'pinching' | 'dragging';
 
 export interface StateMachineConfig {
-  pinchOnRatio: number;     // < this  → enter pinching
-  pinchOffRatio: number;    // > this  → exit  pinching (hysteresis)
-  clickMaxMs: number;       // pinch duration limit for click
+  pinchOnRatio: number;     // < this  → enter pinching/grabbing
+  pinchOffRatio: number;    // > this  → exit  pinching/grabbing (hysteresis)
+  fistOnRatio: number;      // < this  → enter closed fist grab
+  fistOffRatio: number;     // > this  → exit  closed fist grab (hysteresis)
+  clickMaxMs: number;       // grab duration limit for click
   clickMaxRadius: number;   // normalised drift limit for click
   debounceFrames: number;   // consecutive frames required to commit a transition
   confidenceMin: number;    // below this → treat as no hand
@@ -25,14 +28,17 @@ export interface StateMachineConfig {
 export const DEFAULT_SM_CONFIG: StateMachineConfig = {
   pinchOnRatio: 0.30,
   pinchOffRatio: 0.45,
-  clickMaxMs: 350,
-  clickMaxRadius: 0.016,  // ~1.6% of screen width
+  fistOnRatio: 0.60,
+  fistOffRatio: 0.75,
+  clickMaxMs: 380,
+  clickMaxRadius: 0.022,  // ~2.2% of screen width tolerance for hand micro-drift
   debounceFrames: 2,
   confidenceMin: 0.6,
 };
 
 export interface HandFeatureSnapshot {
   pinchRatio: number;
+  fistRatio?: number;
   cursorX: number;
   cursorY: number;
   confidence: number;
@@ -82,6 +88,18 @@ export function createHandSMState(): HandSMState {
   };
 }
 
+function isGrabbingActive(snap: HandFeatureSnapshot, cfg: StateMachineConfig): boolean {
+  const isPinch = snap.pinchRatio < cfg.pinchOnRatio;
+  const isFist = snap.fistRatio !== undefined && snap.fistRatio < cfg.fistOnRatio;
+  return isPinch || isFist;
+}
+
+function isGrabbingReleased(snap: HandFeatureSnapshot, cfg: StateMachineConfig): boolean {
+  const isPinchOpen = snap.pinchRatio > cfg.pinchOffRatio;
+  const isFistOpen = snap.fistRatio === undefined || snap.fistRatio > cfg.fistOffRatio;
+  return isPinchOpen && isFistOpen;
+}
+
 /**
  * Advance the state machine by one inference frame.
  * Returns a new (immutable) state plus any events to emit.
@@ -119,15 +137,15 @@ export function stepStateMachine(
     };
   }
 
-  const { pinchRatio, cursorX, cursorY, timestamp } = features;
+  const { cursorX, cursorY, timestamp } = features;
 
   // ── Determine desired state ─────────────────────────────────────
   let desired: HandState;
 
   if (s.state === 'idle' || s.state === 'hovering') {
-    desired = pinchRatio < cfg.pinchOnRatio ? 'pinching' : 'hovering';
+    desired = isGrabbingActive(features, cfg) ? 'pinching' : 'hovering';
   } else if (s.state === 'pinching') {
-    // Immediate (no debounce) upgrade: pinch held too long or drifted
+    // Immediate (no debounce) upgrade: grab held too long or drifted
     const pinchDur = s.pinchStartTime !== null ? timestamp - s.pinchStartTime : 0;
     const ddx = cursorX - s.pinchStartX;
     const ddy = cursorY - s.pinchStartY;
@@ -144,10 +162,10 @@ export function stepStateMachine(
       s.state = 'dragging';
       desired = 'dragging';
     } else {
-      desired = pinchRatio > cfg.pinchOffRatio ? 'hovering' : 'pinching';
+      desired = isGrabbingReleased(features, cfg) ? 'hovering' : 'pinching';
     }
   } else if (s.state === 'dragging') {
-    desired = pinchRatio > cfg.pinchOffRatio ? 'hovering' : 'dragging';
+    desired = isGrabbingReleased(features, cfg) ? 'hovering' : 'dragging';
   } else {
     desired = 'hovering';
   }
@@ -179,40 +197,51 @@ export function stepStateMachine(
           const ddx = cursorX - s.pinchStartX;
           const ddy = cursorY - s.pinchStartY;
           const drift = Math.hypot(ddx, ddy);
+
           if (dur <= cfg.clickMaxMs && drift <= cfg.clickMaxRadius) {
             events.push({ type: 'click', cursorX, cursorY, timestamp });
+          } else {
+            events.push({ type: 'cancel', cursorX, cursorY, timestamp });
           }
           s.pinchStartTime = null;
         } else if (from === 'dragging') {
           events.push({ type: 'dragEnd', cursorX, cursorY, timestamp });
+          s.pinchStartTime = null;
         }
       }
     }
-    // else: debounce accumulating – keep emitting current-state events
   } else {
     s.debounceCount = 0;
     s.pendingState = null;
   }
 
-  // ── Ongoing-state events ────────────────────────────────────────
-  switch (s.state) {
-    case 'hovering':
-      events.push({ type: 'hover', cursorX, cursorY, timestamp });
-      break;
-    case 'pinching':
-      events.push({ type: 'move', cursorX, cursorY, timestamp });
-      break;
-    case 'dragging': {
-      const ddx = cursorX - s.lastCursorX;
-      const ddy = cursorY - s.lastCursorY;
-      events.push({ type: 'drag', cursorX, cursorY, deltaX: ddx, deltaY: ddy, timestamp });
-      break;
-    }
-    default:
-      events.push({ type: 'move', cursorX, cursorY, timestamp });
+  // ── Continuous events (per-frame within state) ──────────────────
+  const dx = cursorX - s.lastCursorX;
+  const dy = cursorY - s.lastCursorY;
+  const moved = Math.hypot(dx, dy) > 1e-4;
+
+  if (s.state === 'dragging') {
+    events.push({
+      type: 'drag',
+      cursorX,
+      cursorY,
+      deltaX: dx,
+      deltaY: dy,
+      timestamp,
+    });
+  } else if (s.state === 'hovering' && moved) {
+    events.push({
+      type: 'move',
+      cursorX,
+      cursorY,
+      deltaX: dx,
+      deltaY: dy,
+      timestamp,
+    });
   }
 
   s.lastCursorX = cursorX;
   s.lastCursorY = cursorY;
+
   return { next: s, events };
 }

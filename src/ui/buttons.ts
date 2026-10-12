@@ -1,8 +1,9 @@
 /**
  * buttons.ts
  * Manages large gesture-target buttons: hit-testing, hover state visual
- * feedback, and dwell-click event emission.
- * Dwell is computed here and forwarded to the Cursor for the ring render.
+ * feedback, and dwell-click / gesture-click event emission.
+ * Forwarded to DOM element click handlers so all UI responds identically
+ * to gestures and real mouse clicks.
  */
 
 import { EventBus } from '../input/events';
@@ -16,21 +17,39 @@ export class ButtonManager {
   private buttons: ButtonRecord[] = [];
   private currentHoverId: string | null = null;
   private bus: EventBus;
+  private isDispatching = false; // prevents re-entrant loops between DOM and bus clicks
 
   constructor(bus: EventBus) {
     this.bus = bus;
 
-    // Listen for click events to apply the 'active' flash
+    // Listen for click events to apply visual flash and trigger native DOM click if gesture-driven
     bus.on('click', (e) => {
-      if (e.targetId) this.flashActive(e.targetId);
+      if (e.targetId) {
+        this.flashActive(e.targetId);
+        if (e.source === 'gesture' && !this.isDispatching) {
+          const btn = this.buttons.find((b) => b.id === e.targetId);
+          if (btn) {
+            this.isDispatching = true;
+            btn.el.click();
+            this.isDispatching = false;
+          }
+        }
+      }
     });
   }
 
   register(id: string, el: HTMLButtonElement): void {
-    this.buttons.push({ el, id });
+    // Avoid duplicate registration
+    const existing = this.buttons.findIndex((b) => b.id === id);
+    if (existing !== -1) {
+      this.buttons[existing] = { el, id };
+    } else {
+      this.buttons.push({ el, id });
+    }
 
-    // Native mouse click also fires the event
+    // Native mouse click also notifies bus
     el.addEventListener('click', () => {
+      if (this.isDispatching) return;
       this.bus.emit({
         type: 'click',
         position: this.getElCenter(el),
@@ -53,7 +72,14 @@ export class ButtonManager {
 
     for (const btn of this.buttons) {
       const r = btn.el.getBoundingClientRect();
-      const inside = px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
+      // Expand hit area slightly (8px) for easier hovering with hands
+      const pad = 8;
+      const inside =
+        px >= r.left - pad &&
+        px <= r.right + pad &&
+        py >= r.top - pad &&
+        py <= r.bottom + pad;
+
       btn.el.classList.toggle('hovered', inside);
 
       if (inside) {
@@ -66,37 +92,60 @@ export class ButtonManager {
     if (hoverId !== this.currentHoverId) {
       this.currentHoverId = hoverId;
       if (hoverId) {
-        const rect = this.buttons.find((b) => b.id === hoverId)!.el.getBoundingClientRect();
-        this.bus.emit({
-          type: 'hover',
-          position: { x: (rect.left + rect.width / 2) / window.innerWidth, y: (rect.top + rect.height / 2) / window.innerHeight },
-          targetId: hoverId,
-          timestamp: Date.now(),
-          source: 'gesture',
-        });
+        const targetBtn = this.buttons.find((b) => b.id === hoverId);
+        if (targetBtn) {
+          const rect = targetBtn.el.getBoundingClientRect();
+          this.bus.emit({
+            type: 'hover',
+            position: {
+              x: (rect.left + rect.width / 2) / window.innerWidth,
+              y: (rect.top + rect.height / 2) / window.innerHeight,
+            },
+            targetId: hoverId,
+            timestamp: Date.now(),
+            source: 'gesture',
+          });
+        }
       }
     }
 
     return { hoverId, magnetRect };
   }
 
-  /** Called when dwell fires (from Cursor). Emits a click event. */
+  /** Called when dwell fires (from Cursor). Triggers DOM click and emits click event. */
   fireDwell(targetId: string): void {
     const btn = this.buttons.find((b) => b.id === targetId);
     if (!btn) return;
     const pos = this.getElCenter(btn.el);
-    this.bus.emit({ type: 'click', position: pos, targetId, timestamp: Date.now(), source: 'gesture' });
+    this.flashActive(targetId);
+
+    this.bus.emit({
+      type: 'click',
+      position: pos,
+      targetId,
+      timestamp: Date.now(),
+      source: 'gesture',
+    });
+
+    if (!this.isDispatching) {
+      this.isDispatching = true;
+      btn.el.click();
+      this.isDispatching = false;
+    }
   }
 
   private flashActive(id: string): void {
     const btn = this.buttons.find((b) => b.id === id);
     if (!btn) return;
     btn.el.classList.add('active');
-    setTimeout(() => btn.el.classList.remove('active'), 180);
+    setTimeout(() => btn.el.classList.remove('active'), 220);
   }
 
   private getElCenter(el: HTMLElement): { x: number; y: number } {
     const r = el.getBoundingClientRect();
-    return { x: (r.left + r.width / 2) / window.innerWidth, y: (r.top + r.height / 2) / window.innerHeight };
+    return {
+      x: (r.left + r.width / 2) / window.innerWidth,
+      y: (r.top + r.height / 2) / window.innerHeight,
+    };
   }
 }

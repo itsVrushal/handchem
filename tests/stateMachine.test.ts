@@ -25,8 +25,9 @@ function snap(
   cursorX = 0.5,
   cursorY = 0.5,
   confidence = 0.9,
+  fistRatio?: number,
 ): HandFeatureSnapshot {
-  return { pinchRatio, cursorX, cursorY, confidence, timestamp, palmWidth: 0.1 };
+  return { pinchRatio, fistRatio, cursorX, cursorY, confidence, timestamp, palmWidth: 0.1 };
 }
 
 /** Advance N identical frames. */
@@ -243,3 +244,39 @@ describe('debounce', () => {
     expect(afterNoise.state).toBe('dragging');
   });
 });
+
+// ── Closed Fist Gesture ───────────────────────────────────────────
+
+describe('closed fist grabbing & clicking', () => {
+  it('enters pinching/grabbing state when fistRatio < fistOnRatio even without pinch', () => {
+    const s = createHandSMState();
+    // Hovering with open hand (pinch 0.8, fist 1.1)
+    const { state: hovering } = advanceN(s, cfg.debounceFrames, snap(0.8, 0, 0.5, 0.5, 0.9, 1.1));
+    expect(hovering.state).toBe('hovering');
+
+    // Close fist: fistRatio = 0.45 (< 0.60), pinch remains open (0.8)
+    const { state: grabbed } = advanceN(hovering, cfg.debounceFrames, snap(0.8, 50, 0.5, 0.5, 0.9, 0.45));
+    expect(grabbed.state).toBe('pinching');
+
+    // Quick release (fist opened back to 1.1)
+    const { state: after, allEvents } = advanceN(
+      grabbed,
+      cfg.debounceFrames,
+      snap(0.8, 120, 0.5, 0.5, 0.9, 1.1),
+    );
+    expect(after.state).toBe('hovering');
+    expect(allEvents).toContain('click');
+  });
+
+  it('drags when fist is held and moved', () => {
+    const s = createHandSMState();
+    const { state: hovering } = advanceN(s, cfg.debounceFrames, snap(0.8, 0, 0.5, 0.5, 0.9, 1.1));
+    const { state: grabbed } = advanceN(hovering, cfg.debounceFrames, snap(0.8, 10, 0.5, 0.5, 0.9, 0.45));
+
+    // Move cursor while fist is closed beyond clickMaxRadius
+    const moved = stepStateMachine(grabbed, snap(0.8, 20, 0.65, 0.65, 0.9, 0.45), cfg);
+    expect(moved.next.state).toBe('dragging');
+    expect(moved.events.map((e) => e.type)).toContain('dragStart');
+  });
+});
+

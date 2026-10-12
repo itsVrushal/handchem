@@ -26,6 +26,8 @@ export class DebugPanel {
   private elConf: HTMLElement;
   private elPinchBar: HTMLElement;
   private elPinchVal: HTMLElement;
+  private elFistBar: HTMLElement;
+  private elFistVal: HTMLElement;
   private elLog: HTMLElement;
   private elMinCutoff: HTMLInputElement;
   private elBeta: HTMLInputElement;
@@ -54,6 +56,8 @@ export class DebugPanel {
     this.elConf     = this.q('#dbg-conf');
     this.elPinchBar = this.q('#dbg-pinch-bar');
     this.elPinchVal = this.q('#dbg-pinch-val');
+    this.elFistBar  = this.q('#dbg-fist-bar');
+    this.elFistVal  = this.q('#dbg-fist-val');
     this.elLog      = this.q('#event-log');
     this.elMinCutoff = this.qi('#dbg-minCutoff');
     this.elBeta      = this.qi('#dbg-beta');
@@ -109,6 +113,10 @@ export class DebugPanel {
     const pct = Math.min(100, payload.pinchRatio * 100);
     this.elPinchBar.style.setProperty('--fill', `${pct.toFixed(1)}%`);
     this.elPinchVal.textContent = payload.pinchRatio.toFixed(2);
+
+    const fistPct = Math.min(100, payload.fistRatio * 100);
+    this.elFistBar.style.setProperty('--fill', `${fistPct.toFixed(1)}%`);
+    this.elFistVal.textContent = payload.fistRatio.toFixed(2);
   }
 
   logEvent(event: InputEvent): void {
