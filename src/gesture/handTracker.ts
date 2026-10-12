@@ -44,6 +44,8 @@ export interface HandMetrics {
   palmWidth: number;
   pinchRatio: number;
   fistRatio: number;
+  isPointing?: boolean;
+  isTwoFingers?: boolean;
   handState: HandState;
   confidence: number;
   isTracking: boolean;
@@ -188,6 +190,8 @@ export class HandTracker {
     const snap = {
       pinchRatio: feats.pinchRatio,
       fistRatio: feats.fistRatio,
+      isPointing: feats.isPointing,
+      isTwoFingers: feats.isTwoFingers,
       cursorX: screen.x,
       cursorY: screen.y,
       confidence,
@@ -203,6 +207,8 @@ export class HandTracker {
       palmWidth: feats.palmWidth,
       pinchRatio: feats.pinchRatio,
       fistRatio: feats.fistRatio,
+      isPointing: feats.isPointing,
+      isTwoFingers: feats.isTwoFingers,
       handState: next.state,
       confidence,
       isTracking: true,

@@ -39,6 +39,8 @@ export const DEFAULT_SM_CONFIG: StateMachineConfig = {
 export interface HandFeatureSnapshot {
   pinchRatio: number;
   fistRatio?: number;
+  isPointing?: boolean;
+  isTwoFingers?: boolean;
   cursorX: number;
   cursorY: number;
   confidence: number;
@@ -89,12 +91,20 @@ export function createHandSMState(): HandSMState {
 }
 
 function isGrabbingActive(snap: HandFeatureSnapshot, cfg: StateMachineConfig): boolean {
+  // Dedicated single index finger point gesture acts as action/grab/select
+  if (snap.isPointing === true) return true;
+  // Pinch gesture also acts as action/grab/select
   const isPinch = snap.pinchRatio < cfg.pinchOnRatio;
-  const isFist = snap.fistRatio !== undefined && snap.fistRatio < cfg.fistOnRatio;
-  return isPinch || isFist;
+  // If isPointing is not supplied (e.g. unit tests without finger isolation), fallback to fistRatio
+  const isLegacyFist = snap.isPointing === undefined && snap.fistRatio !== undefined && snap.fistRatio < cfg.fistOnRatio;
+  return isPinch || isLegacyFist;
 }
 
 function isGrabbingReleased(snap: HandFeatureSnapshot, cfg: StateMachineConfig): boolean {
+  if (snap.isPointing !== undefined) {
+    const isPinchOpen = snap.pinchRatio > cfg.pinchOffRatio;
+    return !snap.isPointing && isPinchOpen;
+  }
   const isPinchOpen = snap.pinchRatio > cfg.pinchOffRatio;
   const isFistOpen = snap.fistRatio === undefined || snap.fistRatio > cfg.fistOffRatio;
   return isPinchOpen && isFistOpen;

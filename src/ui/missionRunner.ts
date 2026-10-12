@@ -125,8 +125,8 @@ export class MissionRunner {
       contentHtml += `
         <div class="mission-measure-box">
           <div class="measure-indicator" id="measure-status">
-            <span class="measure-icon">✊</span>
-            <span>Make a closed fist and pull any atom in 3D to stretch bonds!</span>
+            <span class="measure-icon">☝️</span>
+            <span>Point with index finger to grab and pull any atom in 3D!</span>
           </div>
         </div>
       `;

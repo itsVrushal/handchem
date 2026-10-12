@@ -278,5 +278,43 @@ describe('closed fist grabbing & clicking', () => {
     expect(moved.next.state).toBe('dragging');
     expect(moved.events.map((e) => e.type)).toContain('dragStart');
   });
+
+  it('triggers action grab with single index finger pointing and releases when opened', () => {
+    const s = createHandSMState();
+    // 2-finger hovering
+    const snapHover: HandFeatureSnapshot = {
+      pinchRatio: 0.8,
+      isPointing: false,
+      isTwoFingers: true,
+      cursorX: 0.5,
+      cursorY: 0.5,
+      confidence: 0.9,
+      timestamp: 0,
+      palmWidth: 0.1,
+    };
+    const { state: hovering } = advanceN(s, cfg.debounceFrames, snapHover);
+    expect(hovering.state).toBe('hovering');
+
+    // Switch to single index finger pointing
+    const snapPoint: HandFeatureSnapshot = {
+      ...snapHover,
+      isPointing: true,
+      isTwoFingers: false,
+      timestamp: 50,
+    };
+    const { state: grabbed } = advanceN(hovering, cfg.debounceFrames, snapPoint);
+    expect(grabbed.state).toBe('pinching');
+
+    // Release pointing back to 2-finger hover
+    const snapRelease: HandFeatureSnapshot = {
+      ...snapHover,
+      isPointing: false,
+      isTwoFingers: true,
+      timestamp: 120,
+    };
+    const { state: after, allEvents } = advanceN(grabbed, cfg.debounceFrames, snapRelease);
+    expect(after.state).toBe('hovering');
+    expect(allEvents).toContain('click');
+  });
 });
 

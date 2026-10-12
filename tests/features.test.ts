@@ -120,6 +120,52 @@ describe('extractFeatures', () => {
     expect(feats.isFist).toBe(false);
   });
 
+  it('identifies single index finger pointing gesture', () => {
+    // lm0 wrist at (0, -0.1, 0)
+    // lm5 index MCP at (0, 0, 0), lm6 index PIP at (0, 0.06, 0), lm8 index tip at (0, 0.14, 0) -> extended
+    // middle, ring, pinky curled: tips close to MCPs
+    const pointingHand = makeLMs({
+      0:  { x: 0, y: -0.1, z: 0 },
+      5:  { x: 0, y: 0, z: 0 },
+      6:  { x: 0, y: 0.06, z: 0 },
+      8:  { x: 0, y: 0.14, z: 0 },
+      9:  { x: 0.03, y: 0, z: 0 },
+      10: { x: 0.03, y: 0.04, z: 0 },
+      12: { x: 0.03, y: 0.02, z: 0 },
+      13: { x: 0.06, y: 0, z: 0 },
+      14: { x: 0.06, y: 0.04, z: 0 },
+      16: { x: 0.06, y: 0.02, z: 0 },
+      17: { x: 0.1, y: 0, z: 0 },
+      18: { x: 0.1, y: 0.04, z: 0 },
+      20: { x: 0.1, y: 0.02, z: 0 },
+    });
+    const feats = extractFeatures(pointingHand);
+    expect(feats.isPointing).toBe(true);
+    expect(feats.isTwoFingers).toBe(false);
+  });
+
+  it('identifies two finger hover gesture', () => {
+    // Both index and middle extended, ring and pinky curled
+    const twoFingersHand = makeLMs({
+      0:  { x: 0, y: -0.1, z: 0 },
+      5:  { x: 0, y: 0, z: 0 },
+      6:  { x: 0, y: 0.06, z: 0 },
+      8:  { x: 0, y: 0.14, z: 0 },
+      9:  { x: 0.03, y: 0, z: 0 },
+      10: { x: 0.03, y: 0.06, z: 0 },
+      12: { x: 0.03, y: 0.14, z: 0 },
+      13: { x: 0.06, y: 0, z: 0 },
+      14: { x: 0.06, y: 0.04, z: 0 },
+      16: { x: 0.06, y: 0.02, z: 0 },
+      17: { x: 0.1, y: 0, z: 0 },
+      18: { x: 0.1, y: 0.04, z: 0 },
+      20: { x: 0.1, y: 0.02, z: 0 },
+    });
+    const feats = extractFeatures(twoFingersHand);
+    expect(feats.isPointing).toBe(false);
+    expect(feats.isTwoFingers).toBe(true);
+  });
+
   it('handles missing landmarks gracefully', () => {
     // Only provide 5 landmarks (partial detection)
     const partial: LandmarkList = Array.from({ length: 5 }, () => ({ x: 0.5, y: 0.5, z: 0 }));

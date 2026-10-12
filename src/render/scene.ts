@@ -148,6 +148,7 @@ export class Scene {
   public hitTest(nx: number, ny: number): string | undefined {
     if (!this.moleculeMesh) return undefined;
 
+    // 1. Direct raycast intersection
     const ndc = this.toNDC(nx, ny);
     this.raycaster.setFromCamera(ndc, this.camera);
     const atomMeshes = this.moleculeMesh.getAtomMeshes();
@@ -158,6 +159,30 @@ export class Scene {
       const atomId = hit.object.userData['atomId'] as number;
       return `atom-${atomId}`;
     }
+
+    // 2. Screen-space proximity check (52px radius for easy webcam hand targeting)
+    let closestAtomId: number | null = null;
+    let closestDistPx = 52;
+    const pxX = nx * window.innerWidth;
+    const pxY = ny * window.innerHeight;
+
+    for (const mesh of atomMeshes) {
+      const atomId = mesh.userData['atomId'] as number;
+      const screenPos = this.getAtomScreenCoords(atomId);
+      if (!screenPos) continue;
+      const ax = screenPos.x * window.innerWidth;
+      const ay = screenPos.y * window.innerHeight;
+      const dist = Math.hypot(pxX - ax, pxY - ay);
+      if (dist < closestDistPx) {
+        closestDistPx = dist;
+        closestAtomId = atomId;
+      }
+    }
+
+    if (closestAtomId !== null) {
+      return `atom-${closestAtomId}`;
+    }
+
     return undefined;
   }
 
@@ -186,10 +211,15 @@ export class Scene {
 
   private wireEvents(bus: EventBus): void {
     bus.on('dragStart', (e) => {
-      if (e.targetId && e.targetId.startsWith('atom-')) {
-        const atomId = parseInt(e.targetId.replace('atom-', ''), 10);
+      let targetId = e.targetId;
+      if (!targetId) {
+        targetId = this.hitTest(e.position.x, e.position.y);
+      }
+
+      if (targetId && targetId.startsWith('atom-')) {
+        const atomId = parseInt(targetId.replace('atom-', ''), 10);
         this.startAtomDrag(atomId, e.position.x, e.position.y);
-      } else if (!e.targetId) {
+      } else if (!targetId) {
         this.mode = 'orbit';
       }
     });

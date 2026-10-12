@@ -29,9 +29,9 @@ const BADGE_CLASS: Record<HandState, string> = {
 
 const BADGE_TEXT: Record<HandState, string> = {
   idle: 'Idle',
-  hovering: 'Hovering',
-  pinching: 'Closed Fist',
-  dragging: 'Dragging',
+  hovering: 'Hover (Move)',
+  pinching: 'Point (Select)',
+  dragging: 'Pulling Atom',
 };
 
 export class CameraPreview {
