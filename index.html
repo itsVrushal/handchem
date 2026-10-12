@@ -98,7 +98,7 @@
               <span class="energy-sub">Harmonic Strain</span>
             </div>
             <canvas id="energy-canvas" width="250" height="110" aria-label="Energy vs stretch plot"></canvas>
-            <span class="energy-hint">Pinch &amp; drag an atom to stretch chemical bonds</span>
+            <span class="energy-hint">Make a closed fist &amp; drag an atom to stretch chemical bonds</span>
           </div>
         </div>
       </aside>
@@ -138,33 +138,6 @@
           <p class="overlay-hint">
             Best in good lighting · keep your hand 30–60 cm from camera
           </p>
-        </div>
-      </div>
-
-      <!-- ── Calibration Overlay ────────────────────────── -->
-      <div
-        id="calibration-overlay"
-        class="overlay"
-        hidden
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cal-title"
-      >
-        <div class="overlay-card calibration-card">
-          <h2 id="cal-title">Hand Calibration</h2>
-          <p id="cal-instruction" class="cal-instruction">Spread your palm open and hold still</p>
-
-          <div class="cal-preview">
-            <video id="cal-video" autoplay playsinline muted aria-hidden="true"></video>
-            <canvas id="cal-canvas" aria-hidden="true"></canvas>
-          </div>
-
-          <div class="cal-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-            <div id="cal-progress" class="cal-progress-fill"></div>
-          </div>
-          <p id="cal-status" class="cal-status" aria-live="polite">Detecting hand…</p>
-
-          <button id="cal-skip" class="btn btn-secondary">Skip Calibration</button>
         </div>
       </div>
 
@@ -215,19 +188,19 @@
           </div>
         </div>
 
-        <!-- Pinch ratio live bar -->
+        <!-- Closed Fist ratio live bar -->
         <div class="debug-section">
-          <div class="debug-label">Pinch Ratio <span id="dbg-pinch-val" class="debug-bar-val">—</span></div>
+          <div class="debug-label">Closed Fist Ratio (Grip) <span id="dbg-fist-val" class="debug-bar-val">—</span></div>
           <div class="debug-bar-container">
-            <div id="dbg-pinch-bar" class="debug-bar" style="--fill:0%"></div>
+            <div id="dbg-fist-bar" class="debug-bar" style="--fill:0%"></div>
           </div>
         </div>
 
-        <!-- Closed Fist ratio live bar -->
+        <!-- Pinch ratio live bar -->
         <div class="debug-section">
-          <div class="debug-label">Fist Ratio (Closed Grip) <span id="dbg-fist-val" class="debug-bar-val">—</span></div>
+          <div class="debug-label">Pinch Ratio (Fallback) <span id="dbg-pinch-val" class="debug-bar-val">—</span></div>
           <div class="debug-bar-container">
-            <div id="dbg-fist-bar" class="debug-bar" style="--fill:0%"></div>
+            <div id="dbg-pinch-bar" class="debug-bar" style="--fill:0%"></div>
           </div>
         </div>
 
@@ -246,9 +219,9 @@
           </div>
         </div>
 
-        <!-- Pinch threshold sliders -->
+        <!-- Grip threshold sliders -->
         <div class="debug-section">
-          <div class="debug-label">Pinch Thresholds</div>
+          <div class="debug-label">Grip Thresholds (Fist / Pinch)</div>
           <div class="debug-controls">
             <label class="debug-control-label" for="dbg-pinchOn">
               pinchOn <span id="pinchOn-val">0.30</span>

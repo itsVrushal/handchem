@@ -540,42 +540,71 @@ h2 {
   user-select: none;
 }
 .btn-carousel {
-  width: 38px;
-  height: 38px;
-  font-size: 0.85rem;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 0.95rem;
   padding: 0;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   color: var(--text-muted);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform var(--t), background var(--t), border-color var(--t), box-shadow var(--t);
 }
-.btn-carousel:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--text);
+.btn-carousel:hover,
+.btn-carousel.hovered {
+  background: rgba(124, 58, 237, 0.28);
+  border-color: rgba(167, 139, 250, 0.65);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+  transform: scale(1.12);
+  color: #fff;
+}
+.btn-carousel:active,
+.btn-carousel.active {
+  background: var(--accent);
+  border-color: var(--accent-light);
+  transform: scale(0.94);
 }
 
 /* ── Quick Header Actions ── */
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   pointer-events: auto;
 }
 .btn-action {
-  height: 40px;
-  padding: 0 14px;
-  font-size: 0.82rem;
+  height: 46px;
+  min-height: 46px;
+  padding: 0 16px;
+  font-size: 0.88rem;
   font-weight: 500;
   border-radius: var(--r-md);
-  background: rgba(10, 10, 22, 0.75);
+  background: rgba(10, 10, 22, 0.82);
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   border: 1px solid var(--border);
   color: var(--text);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform var(--t), background var(--t), border-color var(--t), box-shadow var(--t);
 }
-.btn-action:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+.btn-action:hover,
+.btn-action.hovered {
+  background: rgba(124, 58, 237, 0.28);
+  border-color: rgba(167, 139, 250, 0.65);
+  box-shadow: 0 0 22px rgba(124, 58, 237, 0.5);
+  transform: translateY(-2px) scale(1.05);
+  color: #ffffff;
+}
+.btn-action:active,
+.btn-action.active {
+  background: var(--accent);
+  border-color: var(--accent-light);
+  transform: scale(0.96);
 }
 
 /* ── Chemistry HUD (Top-Left) ── */

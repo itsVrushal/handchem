@@ -24,10 +24,33 @@ export class ButtonManager {
 
     // Listen for click events to apply visual flash and trigger native DOM click if gesture-driven
     bus.on('click', (e) => {
-      if (e.targetId) {
-        this.flashActive(e.targetId);
+      let targetId = e.targetId;
+      if (!targetId) {
+        if (this.currentHoverId) {
+          targetId = this.currentHoverId;
+        } else if (e.position) {
+          const px = e.position.x * window.innerWidth;
+          const py = e.position.y * window.innerHeight;
+          const pad = 24;
+          for (const btn of this.buttons) {
+            const r = btn.el.getBoundingClientRect();
+            if (
+              px >= r.left - pad &&
+              px <= r.right + pad &&
+              py >= r.top - pad &&
+              py <= r.bottom + pad
+            ) {
+              targetId = btn.id;
+              break;
+            }
+          }
+        }
+      }
+
+      if (targetId) {
+        this.flashActive(targetId);
         if (e.source === 'gesture' && !this.isDispatching) {
-          const btn = this.buttons.find((b) => b.id === e.targetId);
+          const btn = this.buttons.find((b) => b.id === targetId);
           if (btn) {
             this.isDispatching = true;
             btn.el.click();
@@ -72,8 +95,8 @@ export class ButtonManager {
 
     for (const btn of this.buttons) {
       const r = btn.el.getBoundingClientRect();
-      // Expand hit area slightly (8px) for easier hovering with hands
-      const pad = 8;
+      // Expand hit area generously (18px) for easier hovering with hands
+      const pad = 18;
       const inside =
         px >= r.left - pad &&
         px <= r.right + pad &&

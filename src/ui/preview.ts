@@ -30,7 +30,7 @@ const BADGE_CLASS: Record<HandState, string> = {
 const BADGE_TEXT: Record<HandState, string> = {
   idle: 'Idle',
   hovering: 'Hovering',
-  pinching: 'Pinching',
+  pinching: 'Closed Fist',
   dragging: 'Dragging',
 };
 

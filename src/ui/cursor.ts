@@ -16,10 +16,10 @@ import { EventBus } from '../input/events';
 
 type CursorState = 'idle' | 'hover' | 'pinching' | 'dragging';
 
-const DWELL_MS = 550; // ms – snappy, comfortable dwell time
+const DWELL_MS = 500; // ms – snappy, comfortable dwell time
 const LERP_FACTOR = 0.28;          // interpolation toward target position per frame
-const MAGNET_RADIUS_PX = 95;       // px – within this range cursor snaps toward target
-const MAGNET_STRENGTH = 0.32;      // fraction to pull toward target centre each frame
+const MAGNET_RADIUS_PX = 115;      // px – within this range cursor snaps toward target
+const MAGNET_STRENGTH = 0.40;      // fraction to pull toward target centre each frame
 
 export class Cursor {
   private readonly canvas: HTMLCanvasElement;
@@ -40,6 +40,7 @@ export class Cursor {
   private dwellStart: number | null = null;
   private onDwell: ((targetId: string) => void) | null = null;
   private dwellFired = false;
+  private dwellLostTime: number | null = null;
 
   // Magnet
   private magnetX: number | null = null;
@@ -118,18 +119,34 @@ export class Cursor {
 
     // ── Dwell logic ────────────────────────────────────────────────
     if (hoveredTargetId !== this.dwellTargetId) {
-      this.dwellTargetId = hoveredTargetId;
-      this.dwellStart = hoveredTargetId ? nowMs : null;
-      this.dwellFired = false;
+      if (hoveredTargetId) {
+        this.dwellTargetId = hoveredTargetId;
+        this.dwellStart = nowMs;
+        this.dwellFired = false;
+        this.dwellLostTime = null;
+      } else {
+        // Allow 160ms grace period so hand tremor/jitter doesn't immediately reset dwell
+        if (this.dwellLostTime === null) {
+          this.dwellLostTime = nowMs;
+        } else if (nowMs - this.dwellLostTime > 160) {
+          this.dwellTargetId = null;
+          this.dwellStart = null;
+          this.dwellFired = false;
+          this.dwellLostTime = null;
+        }
+      }
+    } else if (hoveredTargetId) {
+      this.dwellLostTime = null;
     }
 
     let dwellProgress = 0;
-    if (this.dwellStart !== null && hoveredTargetId) {
+    const activeTarget = hoveredTargetId ?? this.dwellTargetId;
+    if (this.dwellStart !== null && activeTarget) {
       dwellProgress = Math.min(1, (nowMs - this.dwellStart) / DWELL_MS);
       if (dwellProgress >= 1 && !this.dwellFired) {
         this.dwellFired = true;
         this.flashClick();
-        this.onDwell?.(hoveredTargetId);
+        this.onDwell?.(activeTarget);
       }
     }
 
