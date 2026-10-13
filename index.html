@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Outfit:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
@@ -20,7 +20,14 @@
     <!-- ── Top Header Navigation Bar ─────────────────── -->
     <header class="app-header" role="banner">
       <div class="header-brand">
-        <span class="brand-icon" aria-hidden="true">🧬</span>
+        <span class="brand-icon" aria-hidden="true">
+          <svg class="brand-svg-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="2.5" fill="#00f0ff" stroke="#00f0ff" />
+            <ellipse cx="12" cy="12" rx="9.5" ry="4" stroke="#00f0ff" transform="rotate(30 12 12)" />
+            <ellipse cx="12" cy="12" rx="9.5" ry="4" stroke="#70f5ff" transform="rotate(-30 12 12)" />
+          </svg>
+        </span>
         <div class="brand-text">
           <h1 class="brand-title">Molecule Hands</h1>
           <span class="brand-badge">NCERT Classes 9–12</span>
@@ -31,13 +38,19 @@
       <div class="molecule-carousel" role="region" aria-label="Molecule Selector">
         <button id="mol-prev" class="btn btn-icon btn-carousel" aria-label="Previous Molecule"
           data-target-id="mol-prev">
-          ◀
+          <svg class="carousel-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
         </button>
         <div id="mol-title" class="carousel-title" aria-live="polite">
           Water (H₂O)
         </div>
         <button id="mol-next" class="btn btn-icon btn-carousel" aria-label="Next Molecule" data-target-id="mol-next">
-          ▶
+          <svg class="carousel-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
         </button>
       </div>
 
@@ -45,27 +58,62 @@
       <div class="header-actions">
         <button id="btn-missions-toggle" class="btn btn-action btn-action-accent" data-target-id="btn-missions-toggle"
           title="Open NCERT Learning Missions">
-          <span class="btn-icon" aria-hidden="true">📚</span>
+          <span class="btn-icon" aria-hidden="true">
+            <svg class="btn-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 3v3m0 12v3M3 12h3m12 0h3" />
+              <circle cx="12" cy="12" r="2.5" fill="currentColor" />
+            </svg>
+          </span>
           Missions
         </button>
         <button id="btn-build-toggle" class="btn btn-action" data-target-id="btn-build-toggle"
           title="Toggle Build Mode with Valency Checking">
-          <span class="btn-icon" aria-hidden="true">🔨</span>
+          <span class="btn-icon" aria-hidden="true">
+            <svg class="btn-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" />
+              <circle cx="12" cy="12" r="2" fill="currentColor" />
+              <path d="M12 12l8-4.5M12 12L4 7.5M12 12v8" />
+            </svg>
+          </span>
           <span id="build-mode-label">Build Mode</span>
         </button>
         <button id="btn-rep-toggle" class="btn btn-action" data-target-id="btn-rep-toggle"
           title="Switch Ball-and-Stick / Space-Filling">
-          <span class="btn-icon" aria-hidden="true">⚪</span>
+          <span class="btn-icon" aria-hidden="true">
+            <svg class="btn-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="18" r="3.5" />
+              <circle cx="18" cy="6" r="3.5" />
+              <line x1="8.5" y1="15.5" x2="15.5" y2="8.5" stroke-width="2.5" />
+            </svg>
+          </span>
           <span id="rep-label">Ball &amp; Stick</span>
         </button>
         <button id="btn-reset-structure" class="btn btn-action" data-target-id="btn-reset-structure"
           title="Reset Atom Positions">
-          <span class="btn-icon" aria-hidden="true">🔄</span>
+          <span class="btn-icon" aria-hidden="true">
+            <svg class="btn-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-9-9c2.5 0 4.8 1 6.5 2.7L21 8" />
+              <polyline points="21 3 21 8 16 8" />
+            </svg>
+          </span>
           Reset
         </button>
         <button id="toggle-debug" class="btn btn-action" data-target-id="toggle-debug"
           title="Toggle Telemetry Panel (D)">
-          <span class="btn-icon" aria-hidden="true">🛠️</span>
+          <span class="btn-icon" aria-hidden="true">
+            <svg class="btn-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+              <path d="M6 8l3 3-3 3m5 0h4" />
+            </svg>
+          </span>
           Debug
         </button>
       </div>
@@ -86,7 +134,15 @@
         </div>
 
         <div class="hud-ncert-row">
-          <span class="hud-ncert-icon" aria-hidden="true">📖</span>
+          <span class="hud-ncert-icon" aria-hidden="true">
+            <svg class="hud-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              <line x1="9" y1="7" x2="16" y2="7" />
+              <line x1="9" y1="11" x2="14" y2="11" />
+            </svg>
+          </span>
           <span id="hud-ncert" class="hud-ncert-text">Class 10 Chapter 4 / Class 11 Chapter 4</span>
         </div>
 
@@ -128,7 +184,20 @@
           <div class="stark-sys-badge">
             <span class="stark-pulse-dot"></span> Vrushal Patil Creations v3.0
           </div>
-          <div class="stark-arc-icon" aria-hidden="true">⚛️</div>
+          <div class="stark-arc-icon" aria-hidden="true">
+            <svg viewBox="0 0 64 64" width="46" height="46" fill="none">
+              <circle cx="32" cy="32" r="30" stroke="#00f0ff" stroke-width="1.8" stroke-dasharray="4 3"
+                opacity="0.75" />
+              <circle cx="32" cy="32" r="22" stroke="#70f5ff" stroke-width="2" />
+              <circle cx="32" cy="32" r="14" stroke="#00f0ff" stroke-width="2.5" fill="rgba(0, 240, 255, 0.15)" />
+              <circle cx="32" cy="32" r="6" fill="#00f0ff" />
+              <path d="M32 4v8M32 52v8M4 32h8M52 32h8" stroke="#00f0ff" stroke-width="2" />
+              <ellipse cx="32" cy="32" rx="28" ry="10" stroke="#00f0ff" stroke-width="1.5" transform="rotate(45 32 32)"
+                opacity="0.6" />
+              <ellipse cx="32" cy="32" rx="28" ry="10" stroke="#00f0ff" stroke-width="1.5" transform="rotate(-45 32 32)"
+                opacity="0.6" />
+            </svg>
+          </div>
           <h1 id="perm-title" class="stark-title">PROJECT: Molecule Hands</h1>
           <p class="stark-subtitle">Holographic 3D Molecular Engine · Hand Gesture &amp; Desktop Control</p>
         </div>
@@ -137,7 +206,15 @@
         <div class="stark-gesture-grid">
           <div class="stark-gesture-card">
             <div class="sg-badge">GESTURE 01</div>
-            <div class="sg-icon">✌️</div>
+            <div class="sg-icon">
+              <svg viewBox="0 0 32 32" width="28" height="28" fill="none" stroke="#00f0ff" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 18V7a2 2 0 0 1 4 0v9" />
+                <path d="M16 14V5a2 2 0 0 1 4 0v11" />
+                <path d="M20 16a2 2 0 0 1 4 0v4a8 8 0 0 1-8 8h-2a8 8 0 0 1-7-4.5L9 20a2 2 0 0 1 3.5-1.5l1.5 2" />
+                <circle cx="26" cy="7" r="3" stroke="#ffd166" stroke-width="1.5" stroke-dasharray="2 2" />
+              </svg>
+            </div>
             <div class="sg-title">Two Fingers / Relaxed Hand</div>
             <div class="sg-role">HUD Navigation &amp; Dwell Click</div>
             <p class="sg-desc">Steer your virtual cursor across screen. <strong>Hover over buttons for 0.5s</strong> to
@@ -146,7 +223,14 @@
 
           <div class="stark-gesture-card">
             <div class="sg-badge">GESTURE 02</div>
-            <div class="sg-icon">☝️</div>
+            <div class="sg-icon">
+              <svg viewBox="0 0 32 32" width="28" height="28" fill="none" stroke="#00f0ff" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 16V5a2 2 0 0 1 4 0v11" />
+                <path d="M18 13a2 2 0 0 1 4 0v5a7 7 0 0 1-7 7h-2a7 7 0 0 1-6-4l-1.5-2.5a2 2 0 0 1 3.2-1.8L14 18" />
+                <path d="M22 6l5-2m0 0l-1 5m1-5l-6 6" stroke="#ffd166" stroke-width="1.8" />
+              </svg>
+            </div>
             <div class="sg-title">Single Index Finger</div>
             <div class="sg-role">3D Atom Pull &amp; Strain</div>
             <p class="sg-desc">Point at any atom to grab &amp; pull in 3D. Stretch chemical bonds to measure potential
@@ -155,7 +239,15 @@
 
           <div class="stark-gesture-card">
             <div class="sg-badge">TOOL 03</div>
-            <div class="sg-icon">🔨</div>
+            <div class="sg-icon">
+              <svg viewBox="0 0 32 32" width="28" height="28" fill="none" stroke="#00f0ff" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="8" r="4" stroke="#ffd166" fill="rgba(255, 209, 102, 0.2)" />
+                <circle cx="24" cy="24" r="4" stroke="#00f0ff" fill="rgba(0, 240, 255, 0.2)" />
+                <line x1="11" y1="11" x2="21" y2="21" stroke-width="2.5" />
+                <path d="M19 7l6 6M7 19l6 6" stroke="#70f5ff" stroke-width="1.5" stroke-dasharray="2 2" />
+              </svg>
+            </div>
             <div class="sg-title">Build Mode Synthesis</div>
             <div class="sg-role">Valency &amp; Bond Forging</div>
             <p class="sg-desc">Click <strong>+ C, + H, + O, + N</strong> to auto-attach elements, or click two atoms in
@@ -163,8 +255,15 @@
           </div>
 
           <div class="stark-gesture-card">
-            <div class="sg-badge">FALLBACK 04</div>
-            <div class="sg-icon">🖱️</div>
+            <div class="sg-badge">Just in case 04</div>
+            <div class="sg-icon">
+              <svg viewBox="0 0 32 32" width="28" height="28" fill="none" stroke="#00f0ff" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="4" width="14" height="24" rx="7" />
+                <line x1="16" y1="8" x2="16" y2="14" stroke="#ffd166" stroke-width="2" />
+                <line x1="9" y1="14" x2="23" y2="14" stroke-width="1" opacity="0.6" />
+              </svg>
+            </div>
             <div class="sg-title">Desktop Mouse / Trackpad</div>
             <div class="sg-role">Precision Point &amp; Click</div>
             <p class="sg-desc">Standard controls: hover freely <strong>without auto-clicks</strong>, click to trigger
@@ -173,20 +272,40 @@
         </div>
 
         <div class="stark-privacy-bar" role="note">
-          <span class="stark-lock-icon" aria-hidden="true">🔒</span>
+          <span class="stark-lock-icon" aria-hidden="true">
+            <svg class="stark-lock-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#00ff88"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="M9 11a3 3 0 0 1 6 0v2H9v-2z" />
+              <rect x="8" y="13" width="8" height="5" rx="1" fill="#00ff88" fill-opacity="0.3" />
+            </svg>
+          </span>
           <span>AIR-GAPPED SYSTEM: All hand-tracking computer vision runs 100% on-device in browser. Zero video frames
             uploaded.</span>
         </div>
 
         <div class="stark-cta-group">
           <button id="start-btn" class="btn btn-stark-primary btn-large">
-            <span class="btn-icon" aria-hidden="true">⚡</span>
-            INITIALIZE HOLOGRAPHIC CAMERA &amp; START
+            <span class="btn-icon" aria-hidden="true">
+              <svg class="btn-svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" fill="currentColor" />
+              </svg>
+            </span>
+            INITIALIZE CAMERA &amp; START
           </button>
 
           <button id="skip-to-mouse" class="btn btn-stark-secondary btn-large">
-            <span class="btn-icon" aria-hidden="true">🖥️</span>
-            LAUNCH WITH DESKTOP CONTROLS (MOUSE / TOUCH)
+            <span class="btn-icon" aria-hidden="true">
+              <svg class="btn-svg-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+                <circle cx="12" cy="10" r="2" fill="currentColor" />
+              </svg>
+            </span>
+            LAUNCH WITH DESKTOP CONTROLS (MOUSE)
           </button>
         </div>
 
@@ -217,7 +336,14 @@
     <div id="build-toolbar" class="build-toolbar" hidden aria-label="Build Mode Palette">
       <div class="build-toolbar-card">
         <div class="build-toolbar-header">
-          <span class="build-mode-title">🔨 Build Mode</span>
+          <span class="build-mode-title">
+            <svg class="btn-svg-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l8 4.5v9L12 20l-8-4.5v-9L12 2z" />
+              <circle cx="12" cy="12" r="2" fill="currentColor" />
+            </svg>
+            Build Mode
+          </span>
           <span id="valency-status-badge" class="valency-status-badge valency-ok">Valency Check: Saturated ✓</span>
         </div>
         <div class="build-palette">
@@ -230,7 +356,14 @@
           <button id="btn-add-n" class="btn btn-palette" data-target-id="btn-add-n" title="Add Nitrogen (Valency 3)">+
             N</button>
           <button id="btn-clear-build" class="btn btn-palette btn-palette-danger" data-target-id="btn-clear-build"
-            title="Reset Canvas">🗑️ Clear</button>
+            title="Reset Canvas">
+            <svg class="palette-svg-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+            Clear
+          </button>
         </div>
         <p class="build-hint">Click two atoms in sequence to connect or remove a bond. Overvalent atoms glow red!</p>
       </div>
