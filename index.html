@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/style.css" />
@@ -111,7 +111,7 @@
         </div>
       </aside>
 
-      <!-- ── Permission Overlay ─────────────────────────── -->
+      <!-- ── Stark Industries Holographic HUD Instructions & Start Interface ── -->
       <div
         id="permission-overlay"
         class="overlay"
@@ -119,33 +119,77 @@
         aria-modal="true"
         aria-labelledby="perm-title"
       >
-        <div class="overlay-card">
-          <div class="overlay-icon" aria-hidden="true">🧬</div>
-          <h1 id="perm-title">Molecule Hands</h1>
-          <p class="overlay-subtitle">Explore Chemistry With Your Hands</p>
+        <div class="overlay-card stark-hud-modal">
+          <div class="stark-corner stark-corner-tl"></div>
+          <div class="stark-corner stark-corner-tr"></div>
+          <div class="stark-corner stark-corner-bl"></div>
+          <div class="stark-corner stark-corner-br"></div>
 
-          <div class="privacy-notice" role="note">
-            <span class="privacy-icon" aria-hidden="true">🔒</span>
-            <p>
-              Your camera <strong>never leaves your device</strong>. All hand-tracking runs
-              locally in your browser — no video is uploaded, stored or sent anywhere.
-            </p>
+          <div class="stark-hud-header">
+            <div class="stark-sys-badge">
+              <span class="stark-pulse-dot"></span> STARK INDUSTRIES // HOLOGRAPHIC SYNTHESIZER v3.0
+            </div>
+            <div class="stark-arc-icon" aria-hidden="true">⚛️</div>
+            <h1 id="perm-title" class="stark-title">PROJECT: NEW ELEMENT SYNTHESIS</h1>
+            <p class="stark-subtitle">Holographic 3D Molecular Engine · Hand Gesture &amp; Desktop Control</p>
           </div>
 
-          <button id="start-btn" class="btn btn-primary btn-large">
-            <span class="btn-icon" aria-hidden="true">📷</span>
-            Allow Camera &amp; Start
-          </button>
+          <!-- Tactical HUD Gesture & Control Matrix -->
+          <div class="stark-gesture-grid">
+            <div class="stark-gesture-card">
+              <div class="sg-badge">GESTURE 01</div>
+              <div class="sg-icon">✌️</div>
+              <div class="sg-title">Two Fingers / Relaxed Hand</div>
+              <div class="sg-role">HUD Navigation &amp; Dwell Click</div>
+              <p class="sg-desc">Steer your virtual cursor across screen. <strong>Hover over buttons for 0.5s</strong> to trigger click automatically.</p>
+            </div>
 
-          <button id="skip-to-mouse" class="btn btn-secondary btn-large" style="margin-top: 10px;">
-            <span class="btn-icon" aria-hidden="true">🖱️</span>
-            or try with mouse / touch fallback
-          </button>
+            <div class="stark-gesture-card">
+              <div class="sg-badge">GESTURE 02</div>
+              <div class="sg-icon">☝️</div>
+              <div class="sg-title">Single Index Finger</div>
+              <div class="sg-role">3D Atom Pull &amp; Strain</div>
+              <p class="sg-desc">Point at any atom to grab &amp; pull in 3D. Stretch chemical bonds to measure potential energy curve. <em>(Never clicks buttons)</em>.</p>
+            </div>
+
+            <div class="stark-gesture-card">
+              <div class="sg-badge">TOOL 03</div>
+              <div class="sg-icon">🔨</div>
+              <div class="sg-title">Build Mode Synthesis</div>
+              <div class="sg-role">Valency &amp; Bond Forging</div>
+              <p class="sg-desc">Click <strong>+ C, + H, + O, + N</strong> to auto-attach elements, or click two atoms in sequence to toggle single, double &amp; triple bonds.</p>
+            </div>
+
+            <div class="stark-gesture-card">
+              <div class="sg-badge">FALLBACK 04</div>
+              <div class="sg-icon">🖱️</div>
+              <div class="sg-title">Desktop Mouse / Trackpad</div>
+              <div class="sg-role">Precision Point &amp; Click</div>
+              <p class="sg-desc">Standard controls: hover freely <strong>without auto-clicks</strong>, click to trigger buttons, click-drag to rotate/pull, scroll to zoom.</p>
+            </div>
+          </div>
+
+          <div class="stark-privacy-bar" role="note">
+            <span class="stark-lock-icon" aria-hidden="true">🔒</span>
+            <span>AIR-GAPPED SYSTEM: All hand-tracking computer vision runs 100% on-device in browser. Zero video frames uploaded.</span>
+          </div>
+
+          <div class="stark-cta-group">
+            <button id="start-btn" class="btn btn-stark-primary btn-large">
+              <span class="btn-icon" aria-hidden="true">⚡</span>
+              INITIALIZE HOLOGRAPHIC CAMERA &amp; START
+            </button>
+
+            <button id="skip-to-mouse" class="btn btn-stark-secondary btn-large">
+              <span class="btn-icon" aria-hidden="true">🖥️</span>
+              LAUNCH WITH DESKTOP CONTROLS (MOUSE / TOUCH)
+            </button>
+          </div>
 
           <p id="start-error" class="overlay-error" hidden></p>
-          <p class="overlay-hint">
-            Best in good lighting · keep your hand 30–60 cm from camera
-          </p>
+          <div class="stark-hud-footer-hint">
+            <span>OPTICAL CALIBRATION: Position hand 30–60 cm from webcam in ambient light</span>
+          </div>
         </div>
       </div>
 

@@ -20,31 +20,25 @@ export class ButtonManager {
   private isDispatching = false; // prevents re-entrant loops between DOM and bus clicks
   private lastClickedTargetId: string | null = null;
   private lastClickTimestamp = 0;
+  private isMouse = false;
 
   constructor(bus: EventBus) {
     this.bus = bus;
 
-    // Listen for click events from gesture pipeline (e.g. quick fist/pinch tap)
-    bus.on('click', (e) => {
-      if (this.isDispatching) return;
-      if (e.source !== 'gesture') return;
-
-      let targetId: string | null = e.targetId ?? null;
-      if (!targetId) {
-        if (this.currentHoverId) {
-          targetId = this.currentHoverId;
-        } else if (e.position) {
-          targetId = this.findButtonAt(e.position.x * window.innerWidth, e.position.y * window.innerHeight);
-        }
-      }
-
-      if (targetId) {
-        this.triggerGestureClick(targetId);
-      }
+    // Track whether input is currently mouse or gesture to avoid misattributing hover source
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('mousemove', () => { this.isMouse = true; }, { passive: true });
+      window.addEventListener('mousedown', () => { this.isMouse = true; }, { passive: true });
+    }
+    bus.onAny((e) => {
+      if (e.source === 'gesture') this.isMouse = false;
     });
 
+    // Gesture clicks on buttons must ONLY trigger via deliberate hover-dwell timer (fireDwell),
+    // never via single-finger pointing or quick tap twitches.
+
     // When a grab/closed-fist/drag gesture begins while hovering a button,
-    // intercept it immediately as an instant button click rather than starting a 3D orbit!
+    // tag targetId so scene.ts won't treat it as camera orbit, but do NOT click immediately.
     bus.on('dragStart', (e) => {
       const targetId =
         this.currentHoverId ??
@@ -52,7 +46,6 @@ export class ButtonManager {
       if (targetId) {
         // Tag targetId on the event so scene.ts won't treat it as camera orbit
         e.targetId = targetId;
-        this.triggerGestureClick(targetId);
       }
     });
   }
@@ -191,7 +184,7 @@ export class ButtonManager {
           },
           targetId: hoverId,
           timestamp: Date.now(),
-          source: 'gesture',
+          source: this.isMouse ? 'mouse' : 'gesture',
         });
       }
     }

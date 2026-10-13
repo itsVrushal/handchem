@@ -63,7 +63,7 @@ export class EnergyGraph {
 
     // Equilibrium vertical line
     const eqX = toScreenX(this.r0);
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
     ctx.moveTo(eqX, padY);
@@ -71,9 +71,11 @@ export class EnergyGraph {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 2. Draw Potential Energy Well Curve
-    ctx.strokeStyle = '#38bdf8';
+    // 2. Draw Potential Energy Well Curve (Stark Arc Cyan)
+    ctx.strokeStyle = '#00f0ff';
     ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(0, 240, 255, 0.6)';
+    ctx.shadowBlur = 8;
     ctx.beginPath();
     for (let i = 0; i < this.curvePoints.length; i++) {
       const pt = this.curvePoints[i]!;
@@ -83,6 +85,7 @@ export class EnergyGraph {
       else ctx.lineTo(sx, sy);
     }
     ctx.stroke();
+    ctx.shadowBlur = 0;
 
     // 3. Draw Current State Marker
     const curDelta = this.currentR - this.r0;
@@ -91,7 +94,7 @@ export class EnergyGraph {
     const curY = Math.max(padY, Math.min(h - padY, toScreenY(curEnergy)));
 
     // Outer glow ring
-    ctx.fillStyle = Math.abs(curDelta) > 0.15 ? '#ef4444' : '#10b981';
+    ctx.fillStyle = Math.abs(curDelta) > 0.15 ? '#ff2a5f' : '#00ff88';
     ctx.beginPath();
     ctx.arc(curX, curY, 6, 0, Math.PI * 2);
     ctx.fill();
@@ -103,8 +106,8 @@ export class EnergyGraph {
     ctx.stroke();
 
     // Label
-    ctx.fillStyle = 'rgba(240, 240, 248, 0.7)';
-    ctx.font = '10px Inter, sans-serif';
+    ctx.fillStyle = '#e6f7ff';
+    ctx.font = '11px "Share Tech Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillText(`${this.currentR.toFixed(2)} Å`, curX, curY - 10);
   }

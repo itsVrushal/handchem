@@ -134,9 +134,13 @@ describe('ButtonManager', () => {
     };
     bus.emit(dragEvent);
 
-    expect(clicked).toBe(true);
-    // TargetId should be set on event to prevent scene orbiting
     expect(dragEvent.targetId).toBe('btn-reset');
+    // Button is not clicked instantly by dragStart; deliberate dwell is required
+    expect(clicked).toBe(false);
+
+    // Dwell finishes -> triggers click
+    manager.fireDwell('btn-reset');
+    expect(clicked).toBe(true);
   });
 
   it('ignores hidden or closed-modal buttons during hit-testing', () => {

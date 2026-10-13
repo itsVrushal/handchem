@@ -15,17 +15,27 @@ const startError   = document.getElementById('start-error')!         as HTMLElem
 const cameraVideo  = document.getElementById('camera-video')!        as HTMLVideoElement;
 const skipToMouseBtn = document.getElementById('skip-to-mouse')      as HTMLButtonElement | null;
 
+let appInstance: App | null = null;
+
 skipToMouseBtn?.addEventListener('click', () => {
   permOverlay.hidden = true;
-  const app = new App(cameraVideo);
-  app.init().catch(console.error);
+  if (!appInstance) {
+    appInstance = new App(cameraVideo);
+    appInstance.init().catch(console.error);
+  }
 });
 
-// ── Permission flow ───────────────────────────────────────────────
+// ── Permission & Start flow ───────────────────────────────────────
 
 startBtn.addEventListener('click', async () => {
+  if (appInstance) {
+    // If app already running, just dismiss the guide overlay
+    permOverlay.hidden = true;
+    return;
+  }
+
   startBtn.disabled = true;
-  startBtn.textContent = 'Requesting camera…';
+  startBtn.textContent = 'CONNECTING OPTICAL SENSOR…';
   startError.hidden = true;
 
   let stream: MediaStream;
@@ -39,20 +49,20 @@ startBtn.addEventListener('click', async () => {
     startError.textContent = `Camera access denied: ${msg}`;
     startError.hidden = false;
     startBtn.disabled = false;
-    startBtn.textContent = 'Allow Camera & Start';
+    startBtn.textContent = 'INITIALIZE HOLOGRAPHIC CAMERA & START';
     return;
   }
 
-  // Dismiss overlay immediately - direct instant access, no static delay
+  // Dismiss overlay immediately – direct instant access to holographic 3D scene
   permOverlay.hidden = true;
 
   // Initialise the app immediately (loads MediaPipe locally on device)
-  const app = new App(cameraVideo);
+  appInstance = new App(cameraVideo);
   try {
-    await app.init();
+    await appInstance.init();
   } catch (initErr) {
     console.error('MediaPipe init failed:', initErr);
-    showInitWarning('Hand tracking unavailable – using mouse/touch only.');
+    showInitWarning('Hand tracking unavailable – using desktop mouse controls.');
   }
 
   // Wire the stream to the main camera preview video

@@ -36,6 +36,13 @@ export class Scene {
   public onAtomMove?: (targetPos: [number, number, number]) => void;
   public onAtomRelease?: () => void;
 
+  // Holographic Synthesis Dome elements
+  private readonly domeGroup = new THREE.Group();
+  private domeWireframeMesh!: THREE.Mesh;
+  private floorRingsGroup!: THREE.Group;
+  private particlesGroup!: THREE.Points;
+  private envMapTexture: THREE.Texture | null = null;
+
   constructor(canvas: HTMLCanvasElement, bus: EventBus) {
     // ── Renderer ──────────────────────────────────────────────────
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
@@ -44,12 +51,12 @@ export class Scene {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.15;
+    this.renderer.toneMappingExposure = 1.25;
 
-    // ── Scene ─────────────────────────────────────────────────────
+    // ── Scene (Tony Stark Holographic Synthesis Dome) ─────────────
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x08080f);
-    this.scene.fog = new THREE.Fog(0x08080f, 15, 45);
+    this.scene.background = new THREE.Color(0x020510);
+    this.scene.fog = new THREE.Fog(0x020510, 18, 52);
 
     // ── Camera ────────────────────────────────────────────────────
     this.camera = new THREE.PerspectiveCamera(
@@ -60,33 +67,262 @@ export class Scene {
     );
     this.updateCameraFromSpherical();
 
-    // ── Studio Lighting for CPK Atoms ─────────────────────────────
-    const ambient = new THREE.AmbientLight(0xffffff, 0.65);
-    this.scene.add(ambient);
+    // ── Procedural PMREM Studio HDR Environment Map ───────────────
+    try {
+      this.envMapTexture = this.createStudioHDREnvironment();
+      this.scene.environment = this.envMapTexture;
+    } catch (e) {
+      console.warn('Failed to generate HDR PMREM environment:', e);
+    }
 
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1.6);
-    mainLight.position.set(6, 9, 7);
+    // ── Studio Rig Lights (360° balanced illumination, zero dark angles) ──
+    // Hemisphere light gives sky (cyan) and ground (deep navy fill) radiance
+    const hemiLight = new THREE.HemisphereLight(0x70f5ff, 0x071e3d, 1.4);
+    this.scene.add(hemiLight);
+
+    // Primary directional key light (top-right-front)
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.8);
+    mainLight.position.set(6, 10, 8);
     mainLight.castShadow = true;
     mainLight.shadow.mapSize.setScalar(1024);
     this.scene.add(mainLight);
 
-    const fillLight = new THREE.PointLight(0x7c3aed, 1.2, 25);
-    fillLight.position.set(-5, 3, -4);
+    // Opposite fill directional light (bottom-left-back)
+    const fillLight = new THREE.DirectionalLight(0x00d2ff, 1.3);
+    fillLight.position.set(-6, -4, -6);
     this.scene.add(fillLight);
 
-    const rimLight = new THREE.PointLight(0x38bdf8, 1.0, 20);
-    rimLight.position.set(4, -3, -5);
-    this.scene.add(rimLight);
+    // Bottom-up bounce directional light (guarantees underside of atoms is well lit)
+    const bottomLight = new THREE.DirectionalLight(0x38bdf8, 1.0);
+    bottomLight.position.set(0, -8, 2);
+    this.scene.add(bottomLight);
 
-    // ── Subtle backdrop grid ──────────────────────────────────────
-    const grid = new THREE.GridHelper(24, 24, 0x1e1e38, 0x141428);
-    grid.position.y = -3.2;
-    this.scene.add(grid);
+    // Arc-reactor point light (central holographic radiance)
+    const arcReactorLight = new THREE.PointLight(0x00f0ff, 2.0, 32);
+    arcReactorLight.position.set(0, 3.5, 2.5);
+    this.scene.add(arcReactorLight);
+
+    // ── Build Holographic Synthesis Dome Viewport ─────────────────
+    this.buildHolographicDome();
 
     // ── Event wiring ──────────────────────────────────────────────
     this.wireEvents(bus);
 
     window.addEventListener('resize', this.onResize);
+  }
+
+  /**
+   * Generates a procedural HDR equirectangular studio map using HTML5 Canvas & PMREMGenerator.
+   * Gives atoms realistic specular glints, rim highlights, and ambient light from every viewing angle.
+   */
+  private createStudioHDREnvironment(): THREE.Texture {
+    const width = 1024;
+    const height = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('2D context unavailable for HDR generation');
+
+    // Midnight navy studio background gradient
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
+    bgGrad.addColorStop(0, '#040d1a');      // Zenith (deep navy)
+    bgGrad.addColorStop(0.48, '#091c33');   // Upper horizon
+    bgGrad.addColorStop(0.52, '#0f2f54');   // Horizon light band
+    bgGrad.addColorStop(0.75, '#051426');   // Lower ground
+    bgGrad.addColorStop(1, '#020610');      // Nadir
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Helper for rendering high-radiance studio softboxes on equirectangular projection
+    const drawSoftbox = (
+      cx: number, cy: number, rx: number, ry: number,
+      colorCenter: string, colorMid: string, colorEdge: string,
+    ) => {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(1, ry / rx);
+      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+      grad.addColorStop(0, colorCenter);
+      grad.addColorStop(0.4, colorMid);
+      grad.addColorStop(1, colorEdge);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 0, rx, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    // 1. High-intensity Key Softbox (Top-Front: pure brilliant white with electric cyan corona)
+    drawSoftbox(width * 0.35, height * 0.22, 170, 95,
+      'rgba(255, 255, 255, 1.0)', 'rgba(220, 248, 255, 0.8)', 'rgba(0, 240, 255, 0)');
+
+    // 2. Electric Cyan Fill Softbox (Left-Middle)
+    drawSoftbox(width * 0.82, height * 0.35, 190, 110,
+      'rgba(140, 245, 255, 0.9)', 'rgba(0, 180, 255, 0.5)', 'rgba(0, 100, 255, 0)');
+
+    // 3. Warm Stark Arc Rim Softbox (Right-Back rim light for metallic & specular glints)
+    drawSoftbox(width * 0.12, height * 0.40, 150, 85,
+      'rgba(255, 235, 190, 0.85)', 'rgba(255, 180, 80, 0.45)', 'rgba(255, 120, 0, 0)');
+
+    // 4. Underside Bounce Softbox (Nadir/Lower angles so underside of molecules is never dark)
+    drawSoftbox(width * 0.50, height * 0.80, 230, 110,
+      'rgba(0, 180, 255, 0.7)', 'rgba(0, 100, 210, 0.35)', 'rgba(0, 40, 90, 0)');
+
+    // 5. Horizon Tech Glow Line
+    const horizonGrad = ctx.createLinearGradient(0, height * 0.48, 0, height * 0.52);
+    horizonGrad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+    horizonGrad.addColorStop(0.5, 'rgba(0, 240, 255, 0.35)');
+    horizonGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+    ctx.fillStyle = horizonGrad;
+    ctx.fillRect(0, height * 0.48, width, height * 0.04);
+
+    // Convert canvas into PMREM texture
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const renderTarget = pmremGenerator.fromEquirectangular(texture);
+    const envMap = renderTarget.texture;
+
+    texture.dispose();
+    pmremGenerator.dispose();
+    return envMap;
+  }
+
+  /**
+   * Constructs the Tony Stark Holographic Synthesis Dome environment:
+   * 1. Geodesic overhead wireframe hemisphere dome
+   * 2. Concentric holographic floor target rings with cardinal markers
+   * 3. Ambient drifting elemental data particles
+   */
+  private buildHolographicDome(): void {
+    // 1. Geodesic overhead wireframe hemisphere dome
+    const domeGeom = new THREE.SphereGeometry(18, 36, 18, 0, Math.PI * 2, 0, Math.PI * 0.5);
+    const domeMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.12,
+    });
+    this.domeWireframeMesh = new THREE.Mesh(domeGeom, domeMat);
+    this.domeWireframeMesh.position.y = -3.2; // Starts from floor grid and arches overhead
+    this.domeGroup.add(this.domeWireframeMesh);
+
+    // Equator base collar ring
+    const collarGeom = new THREE.RingGeometry(17.8, 18.0, 64);
+    const collarMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.35,
+    });
+    const collarMesh = new THREE.Mesh(collarGeom, collarMat);
+    collarMesh.rotation.x = Math.PI / 2;
+    collarMesh.position.y = -3.19;
+    this.domeGroup.add(collarMesh);
+
+    // 2. Concentric Holographic Floor Target Rings
+    this.floorRingsGroup = new THREE.Group();
+    this.floorRingsGroup.position.y = -3.18;
+
+    // Outer target boundary ring (radius 11.5)
+    const outerRingGeom = new THREE.RingGeometry(11.4, 11.55, 64);
+    const outerRingMat = new THREE.MeshBasicMaterial({
+      color: 0x0077ff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.35,
+    });
+    const outerRing = new THREE.Mesh(outerRingGeom, outerRingMat);
+    outerRing.rotation.x = Math.PI / 2;
+    this.floorRingsGroup.add(outerRing);
+
+    // Mid calibration ring (radius 6.8)
+    const midRingGeom = new THREE.RingGeometry(6.75, 6.85, 48);
+    const midRingMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.50,
+    });
+    const midRing = new THREE.Mesh(midRingGeom, midRingMat);
+    midRing.rotation.x = Math.PI / 2;
+    this.floorRingsGroup.add(midRing);
+
+    // Cardinal tick markers along X and Z axes (0°, 90°, 180°, 270°)
+    const tickMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.65 });
+    const ticks: [number, number, number, number, number, number][] = [
+      [6.4, 0, 0, 7.2, 0, 0],       // +X (90°)
+      [-6.4, 0, 0, -7.2, 0, 0],     // -X (270°)
+      [0, 0, 6.4, 0, 0, 7.2],       // +Z (0°)
+      [0, 0, -6.4, 0, 0, -7.2],     // -Z (180°)
+    ];
+    for (const [x1, y1, z1, x2, y2, z2] of ticks) {
+      const lineGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(x1, y1, z1),
+        new THREE.Vector3(x2, y2, z2),
+      ]);
+      const tickLine = new THREE.Line(lineGeom, tickMat);
+      this.floorRingsGroup.add(tickLine);
+    }
+
+    // Inner target focus ring (radius 3.2)
+    const innerRingGeom = new THREE.RingGeometry(3.15, 3.25, 36);
+    const innerRingMat = new THREE.MeshBasicMaterial({
+      color: 0x70f5ff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.65,
+    });
+    const innerRing = new THREE.Mesh(innerRingGeom, innerRingMat);
+    innerRing.rotation.x = Math.PI / 2;
+    this.floorRingsGroup.add(innerRing);
+
+    // Center laser core emitter glow disk (radius 1.1)
+    const coreDiskGeom = new THREE.CircleGeometry(1.1, 32);
+    const coreDiskMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.16,
+      blending: THREE.AdditiveBlending,
+    });
+    const coreDisk = new THREE.Mesh(coreDiskGeom, coreDiskMat);
+    coreDisk.rotation.x = Math.PI / 2;
+    this.floorRingsGroup.add(coreDisk);
+
+    this.domeGroup.add(this.floorRingsGroup);
+
+    // 3. Ambient Floating Holographic Data Particles
+    const particleCount = 130;
+    const particlePositions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 1.5 + Math.random() * 8.5;
+      particlePositions[i * 3 + 0] = Math.cos(angle) * dist;
+      particlePositions[i * 3 + 1] = -2.8 + Math.random() * 8.0;
+      particlePositions[i * 3 + 2] = Math.sin(angle) * dist;
+    }
+    const particleGeom = new THREE.BufferGeometry();
+    particleGeom.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+    const particleMat = new THREE.PointsMaterial({
+      color: 0x70f5ff,
+      size: 0.09,
+      transparent: true,
+      opacity: 0.60,
+      blending: THREE.AdditiveBlending,
+    });
+    this.particlesGroup = new THREE.Points(particleGeom, particleMat);
+    this.domeGroup.add(this.particlesGroup);
+
+    // Floor base grid
+    const grid = new THREE.GridHelper(30, 30, 0x00f0ff, 0x06203d);
+    grid.position.y = -3.2;
+    this.domeGroup.add(grid);
+
+    this.scene.add(this.domeGroup);
   }
 
   public setMolecule(molecule: MoleculeData, mode: RepresentationMode = this.currentMode): void {
@@ -308,6 +544,18 @@ export class Scene {
     if (this.mode === 'none' && this.moleculeMesh) {
       this.moleculeMesh.group.rotation.y += deltaSec * 0.12;
     }
+
+    // Dynamic Holographic Synthesis Dome animations
+    if (this.domeWireframeMesh) {
+      this.domeWireframeMesh.rotation.y += deltaSec * 0.015;
+    }
+    if (this.floorRingsGroup) {
+      this.floorRingsGroup.rotation.y -= deltaSec * 0.03;
+    }
+    if (this.particlesGroup) {
+      this.particlesGroup.rotation.y += deltaSec * 0.02;
+    }
+
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -321,6 +569,9 @@ export class Scene {
 
   public dispose(): void {
     window.removeEventListener('resize', this.onResize);
+    if (this.envMapTexture) {
+      this.envMapTexture.dispose();
+    }
     if (this.moleculeMesh) {
       this.moleculeMesh.dispose();
     }

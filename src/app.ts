@@ -65,6 +65,7 @@ export class App {
 
   // Active interaction tracking
   private activeGrabbedAtomId: number | null = null;
+  private isPointing = false;
 
   constructor(private readonly video: HTMLVideoElement) {
     const mainCanvas = document.getElementById('main-canvas') as HTMLCanvasElement;
@@ -289,10 +290,10 @@ export class App {
       }
     });
 
-    // Atom click handling for Build Mode
-    this.bus.on('click', (e) => {
+    // Atom click handling for Build Mode (gesture and mouse clicks)
+    const onAtomSelect = (nx: number, ny: number) => {
       if (this.builder.isBuildModeActive()) {
-        const hit = this.scene.hitTest(e.position.x, e.position.y);
+        const hit = this.scene.hitTest(nx, ny);
         if (hit && hit.startsWith('atom-')) {
           const atomId = parseInt(hit.replace('atom-', ''), 10);
           this.builder.handleAtomClicked(atomId);
@@ -303,6 +304,18 @@ export class App {
           }
         }
       }
+    };
+
+    this.bus.on('click', (e) => {
+      onAtomSelect(e.position.x, e.position.y);
+    });
+
+    const mainCanvas = document.getElementById('main-canvas') as HTMLCanvasElement;
+    mainCanvas?.addEventListener('click', (e) => {
+      const r = mainCanvas.getBoundingClientRect();
+      const nx = (e.clientX - r.left) / r.width;
+      const ny = (e.clientY - r.top) / r.height;
+      onAtomSelect(nx, ny);
     });
 
     // Debug panel tuning callbacks
@@ -351,6 +364,7 @@ export class App {
     if (timestamp - this.lastInferenceTime >= INFERENCE_INTERVAL_MS) {
       const result = this.tracker.process(this.video, timestamp);
       if (result) {
+        this.isPointing = result.metrics.isPointing ?? false;
         inferenceMs = result.inferenceMs;
         this.preview.updateLandmarks(result.landmarks);
         const m = result.metrics;
@@ -374,6 +388,8 @@ export class App {
           inferenceMs,
           ...m,
         });
+      } else {
+        this.isPointing = false;
       }
       this.lastInferenceTime = timestamp;
     }
@@ -410,7 +426,7 @@ export class App {
 
     // ── Render ──────────────────────────────────────────────────────
     this.scene.render(deltaSec);
-    this.cursor.render(timestamp, hoverId, atomMagnetRect);
+    this.cursor.render(timestamp, hoverId, atomMagnetRect, this.isPointing);
     this.preview.render();
 
     this.rafId = requestAnimationFrame((t) => this.loop(t));

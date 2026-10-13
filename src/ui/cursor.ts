@@ -48,6 +48,19 @@ export class Cursor {
 
   private hidden = true; // hidden until first hand or mouse event
 
+  private isMouse = true; // start in mouse mode so desktop cursor is immediately active
+
+  private setMouseMode(isMouse: boolean): void {
+    this.isMouse = isMouse;
+    if (typeof document !== 'undefined') {
+      if (isMouse) {
+        document.body.classList.remove('hand-tracking-active');
+      } else {
+        document.body.classList.add('hand-tracking-active');
+      }
+    }
+  }
+
   constructor(canvas: HTMLCanvasElement, bus: EventBus) {
     this.canvas = canvas;
     const ctx = canvas.getContext('2d');
@@ -58,14 +71,51 @@ export class Cursor {
     this.resize();
     window.addEventListener('resize', () => this.resize());
 
+    // Physical mouse detection: whenever physical mouse moves or clicks, dwell is disabled & OS cursor is active
+    window.addEventListener('mousemove', () => { this.setMouseMode(true); }, { passive: true });
+    window.addEventListener('mousedown', () => { this.setMouseMode(true); }, { passive: true });
+
     // Listen to unified events
-    bus.on('move',      (e) => { this.setTarget(e.position.x, e.position.y); this.state = 'idle';     this.hidden = false; });
-    bus.on('hover',     (e) => { this.setTarget(e.position.x, e.position.y); this.state = 'hover';    this.hidden = false; });
-    bus.on('dragStart', (e) => { this.setTarget(e.position.x, e.position.y); this.state = 'dragging'; this.hidden = false; });
-    bus.on('drag',      (e) => { this.setTarget(e.position.x, e.position.y); this.state = 'dragging'; this.hidden = false; });
-    bus.on('dragEnd',   (e) => { this.setTarget(e.position.x, e.position.y); this.state = 'hover';    this.hidden = false; });
-    bus.on('click',     (e) => { this.setTarget(e.position.x, e.position.y); this.state = 'hover';    this.hidden = false; this.flashClick(); });
-    bus.on('cancel',    ()  => { this.state = 'idle'; });
+    bus.on('move', (e) => {
+      this.setMouseMode(e.source === 'mouse');
+      this.setTarget(e.position.x, e.position.y);
+      this.state = 'idle';
+      this.hidden = false;
+    });
+    bus.on('hover', (e) => {
+      this.setMouseMode(e.source === 'mouse');
+      this.setTarget(e.position.x, e.position.y);
+      this.state = 'hover';
+      this.hidden = false;
+    });
+    bus.on('dragStart', (e) => {
+      this.setMouseMode(e.source === 'mouse');
+      this.setTarget(e.position.x, e.position.y);
+      this.state = 'dragging';
+      this.hidden = false;
+    });
+    bus.on('drag', (e) => {
+      this.setMouseMode(e.source === 'mouse');
+      this.setTarget(e.position.x, e.position.y);
+      this.state = 'dragging';
+      this.hidden = false;
+    });
+    bus.on('dragEnd', (e) => {
+      this.setMouseMode(e.source === 'mouse');
+      this.setTarget(e.position.x, e.position.y);
+      this.state = 'hover';
+      this.hidden = false;
+    });
+    bus.on('click', (e) => {
+      this.setMouseMode(e.source === 'mouse');
+      this.setTarget(e.position.x, e.position.y);
+      this.state = 'hover';
+      this.hidden = false;
+      this.flashClick();
+    });
+    bus.on('cancel', () => {
+      this.state = 'idle';
+    });
   }
 
   private setTarget(nx: number, ny: number): void {
@@ -83,6 +133,7 @@ export class Cursor {
     nowMs: number,
     hoveredTargetId: string | null = null,
     magnetRect: DOMRect | null = null,
+    isPointing = false,
   ): void {
     const W = window.innerWidth;
     const H = window.innerHeight;
@@ -118,42 +169,52 @@ export class Cursor {
     }
 
     // ── Dwell logic ────────────────────────────────────────────────
-    if (hoveredTargetId !== this.dwellTargetId) {
-      if (hoveredTargetId) {
-        this.dwellTargetId = hoveredTargetId;
-        this.dwellStart = nowMs;
-        this.dwellFired = false;
-        this.dwellLostTime = null;
-      } else {
-        // Allow 200ms grace period so hand tremor/jitter doesn't immediately reset dwell
-        if (this.dwellLostTime === null) {
-          this.dwellLostTime = nowMs;
-        } else if (nowMs - this.dwellLostTime > 200) {
-          this.dwellTargetId = null;
-          this.dwellStart = null;
+    // Never run dwell auto-click for mouse input OR single-finger pointing!
+    // Dwell click is ONLY for two-finger / open hand hover on buttons.
+    let dwellProgress = 0;
+    if (this.isMouse || isPointing) {
+      this.dwellTargetId = null;
+      this.dwellStart = null;
+      this.dwellFired = false;
+      this.dwellLostTime = null;
+    } else {
+      if (hoveredTargetId !== this.dwellTargetId) {
+        if (hoveredTargetId) {
+          this.dwellTargetId = hoveredTargetId;
+          this.dwellStart = nowMs;
           this.dwellFired = false;
           this.dwellLostTime = null;
+        } else {
+          // Allow 200ms grace period so hand tremor/jitter doesn't immediately reset dwell
+          if (this.dwellLostTime === null) {
+            this.dwellLostTime = nowMs;
+          } else if (nowMs - this.dwellLostTime > 200) {
+            this.dwellTargetId = null;
+            this.dwellStart = null;
+            this.dwellFired = false;
+            this.dwellLostTime = null;
+          }
         }
+      } else if (hoveredTargetId) {
+        this.dwellLostTime = null;
       }
-    } else if (hoveredTargetId) {
-      this.dwellLostTime = null;
-    }
 
-    let dwellProgress = 0;
-    const activeTarget = hoveredTargetId ?? this.dwellTargetId;
-    if (this.dwellStart !== null && activeTarget && !this.dwellFired) {
-      dwellProgress = Math.min(1, (nowMs - this.dwellStart) / DWELL_MS);
-      if (dwellProgress >= 1) {
-        this.dwellFired = true;
-        this.flashClick();
-        this.onDwell?.(activeTarget);
-        dwellProgress = 0;
+      const activeTarget = hoveredTargetId ?? this.dwellTargetId;
+      if (this.dwellStart !== null && activeTarget && !this.dwellFired) {
+        dwellProgress = Math.min(1, (nowMs - this.dwellStart) / DWELL_MS);
+        if (dwellProgress >= 1) {
+          this.dwellFired = true;
+          this.flashClick();
+          this.onDwell?.(activeTarget);
+          dwellProgress = 0;
+        }
       }
     }
 
     // ── Draw ──────────────────────────────────────────────────────
     this.ctx.clearRect(0, 0, W, H);
-    if (this.hidden) return;
+    // When in physical mouse mode, OS native cursor is used; only draw in gesture tracking mode
+    if (this.hidden || this.isMouse) return;
 
     const x = this.displayX;
     const y = this.displayY;
@@ -168,23 +229,22 @@ export class Cursor {
     } else {
       this.drawIdle(x, y);
     }
-
   }
 
-  // ── Drawing helpers ─────────────────────────────────────────────
+  // ── Drawing helpers (Stark Holographic Cyan HUD) ────────────────
 
   private drawIdle(x: number, y: number): void {
     const r = 7;
     this.ctx.beginPath();
     this.ctx.arc(x, y, r, 0, Math.PI * 2);
-    this.ctx.strokeStyle = 'rgba(167,139,250,0.55)';
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.65)';
     this.ctx.lineWidth = 1.5;
     this.ctx.stroke();
 
-    // Centre dot
+    // Centre arc dot
     this.ctx.beginPath();
     this.ctx.arc(x, y, 2, 0, Math.PI * 2);
-    this.ctx.fillStyle = 'rgba(167,139,250,0.6)';
+    this.ctx.fillStyle = '#00f0ff';
     this.ctx.fill();
   }
 
@@ -192,76 +252,92 @@ export class Cursor {
     const pulse = 1 + 0.12 * Math.sin(this.pulseT * 4);
     const r = 13 * pulse;
 
-    // Glow
-    const grd = this.ctx.createRadialGradient(x, y, 2, x, y, r + 8);
-    grd.addColorStop(0, 'rgba(124,58,237,0.35)');
-    grd.addColorStop(1, 'rgba(124,58,237,0)');
+    // Stark Cyan Glow
+    const grd = this.ctx.createRadialGradient(x, y, 2, x, y, r + 10);
+    grd.addColorStop(0, 'rgba(0, 240, 255, 0.4)');
+    grd.addColorStop(0.6, 'rgba(0, 119, 255, 0.2)');
+    grd.addColorStop(1, 'rgba(0, 240, 255, 0)');
     this.ctx.beginPath();
-    this.ctx.arc(x, y, r + 8, 0, Math.PI * 2);
+    this.ctx.arc(x, y, r + 10, 0, Math.PI * 2);
     this.ctx.fillStyle = grd;
     this.ctx.fill();
 
-    // Ring
+    // Tech HUD ring
     this.ctx.beginPath();
     this.ctx.arc(x, y, r, 0, Math.PI * 2);
-    this.ctx.strokeStyle = 'rgba(167,139,250,0.85)';
+    this.ctx.strokeStyle = '#00f0ff';
     this.ctx.lineWidth = 2;
+    this.ctx.stroke();
+
+    // Crosshair ticks
+    const tickLen = 4;
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.85)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    this.ctx.moveTo(x - r - tickLen, y);
+    this.ctx.lineTo(x - r + 1, y);
+    this.ctx.moveTo(x + r - 1, y);
+    this.ctx.lineTo(x + r + tickLen, y);
+    this.ctx.moveTo(x, y - r - tickLen);
+    this.ctx.lineTo(x, y - r + 1);
+    this.ctx.moveTo(x, y + r - 1);
+    this.ctx.lineTo(x, y + r + tickLen);
     this.ctx.stroke();
 
     // Centre dot
     this.ctx.beginPath();
     this.ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-    this.ctx.fillStyle = '#a78bfa';
+    this.ctx.fillStyle = '#ffffff';
     this.ctx.fill();
 
-    // Dwell progress arc
-    if (dwellProgress > 0) {
+    // Dwell progress arc (gestures only)
+    if (dwellProgress > 0 && !this.isMouse) {
       this.drawDwellRing(x, y, r + 7, dwellProgress);
     }
 
     // Click flash ripple animation
     if (this.flashClickTimer > Date.now()) {
       const rem = Math.max(0, (this.flashClickTimer - Date.now()) / 220);
-      const burstR = r + 6 + (1 - rem) * 18;
+      const burstR = r + 6 + (1 - rem) * 20;
       this.ctx.beginPath();
       this.ctx.arc(x, y, burstR, 0, Math.PI * 2);
-      this.ctx.strokeStyle = `rgba(16, 185, 129, ${rem * 0.95})`;
+      this.ctx.strokeStyle = `rgba(0, 255, 136, ${rem * 0.95})`;
       this.ctx.lineWidth = 3;
       this.ctx.stroke();
     }
   }
 
   private drawPinching(x: number, y: number): void {
-    // Solid filled circle – indicates grip
+    // Solid Stark Arc Core
     this.ctx.beginPath();
     this.ctx.arc(x, y, 9, 0, Math.PI * 2);
-    this.ctx.fillStyle = 'rgba(124,58,237,0.85)';
+    this.ctx.fillStyle = 'rgba(0, 240, 255, 0.85)';
     this.ctx.fill();
 
     this.ctx.beginPath();
     this.ctx.arc(x, y, 9, 0, Math.PI * 2);
-    this.ctx.strokeStyle = '#a78bfa';
-    this.ctx.lineWidth = 1.5;
+    this.ctx.strokeStyle = '#ffffff';
+    this.ctx.lineWidth = 2;
     this.ctx.stroke();
   }
 
   private drawDragging(x: number, y: number): void {
-    // Diamond + cross
-    const s = 10;
+    // Holographic diamond target crosshair
+    const s = 11;
     this.ctx.save();
     this.ctx.translate(x, y);
     this.ctx.rotate(Math.PI / 4);
-    this.ctx.strokeStyle = '#a78bfa';
+    this.ctx.strokeStyle = '#00f0ff';
     this.ctx.lineWidth = 2;
-    this.ctx.shadowColor = 'rgba(124,58,237,0.7)';
-    this.ctx.shadowBlur = 10;
+    this.ctx.shadowColor = 'rgba(0, 240, 255, 0.9)';
+    this.ctx.shadowBlur = 12;
     this.ctx.strokeRect(-s / 2, -s / 2, s, s);
     this.ctx.restore();
 
-    // Centre dot
+    // Centre laser dot
     this.ctx.beginPath();
     this.ctx.arc(x, y, 2.5, 0, Math.PI * 2);
-    this.ctx.fillStyle = '#a78bfa';
+    this.ctx.fillStyle = '#ffffff';
     this.ctx.fill();
   }
 
@@ -270,10 +346,13 @@ export class Cursor {
     const end = start + progress * Math.PI * 2;
     this.ctx.beginPath();
     this.ctx.arc(x, y, r, start, end);
-    this.ctx.strokeStyle = '#10b981';
-    this.ctx.lineWidth = 3;
+    this.ctx.strokeStyle = '#00ff88'; // Arc Reactor emerald/neon cyan
+    this.ctx.lineWidth = 3.5;
     this.ctx.lineCap = 'round';
+    this.ctx.shadowColor = 'rgba(0, 255, 136, 0.8)';
+    this.ctx.shadowBlur = 8;
     this.ctx.stroke();
+    this.ctx.shadowBlur = 0;
   }
 
   private flashClickTimer = 0;
