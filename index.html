@@ -1,323 +1,334 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Molecule Hands – Interactive 3D Chemistry (NCERT 9–12)</title>
-    <meta
-      name="description"
-      content="Explore atoms, molecules and chemical bonds in 3D using just your webcam-tracked hand as a virtual mouse. Free, private, on-device processing for NCERT Chemistry."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/src/style.css" />
-  </head>
-  <body>
-    <div id="app">
-      <!-- ── Top Header Navigation Bar ─────────────────── -->
-      <header class="app-header" role="banner">
-        <div class="header-brand">
-          <span class="brand-icon" aria-hidden="true">🧬</span>
-          <div class="brand-text">
-            <h1 class="brand-title">Molecule Hands</h1>
-            <span class="brand-badge">NCERT Classes 9–12</span>
-          </div>
-        </div>
 
-        <!-- Molecule Carousel Selector -->
-        <div class="molecule-carousel" role="region" aria-label="Molecule Selector">
-          <button id="mol-prev" class="btn btn-icon btn-carousel" aria-label="Previous Molecule" data-target-id="mol-prev">
-            ◀
-          </button>
-          <div id="mol-title" class="carousel-title" aria-live="polite">
-            Water (H₂O)
-          </div>
-          <button id="mol-next" class="btn btn-icon btn-carousel" aria-label="Next Molecule" data-target-id="mol-next">
-            ▶
-          </button>
-        </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Molecule Hands – Interactive 3D Chemistry (NCERT 9–12)</title>
+  <meta name="description"
+    content="Explore atoms, molecules and chemical bonds in 3D using just your webcam-tracked hand as a virtual mouse. Free, private, on-device processing for NCERT Chemistry." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
 
-        <!-- Quick Action Bar -->
-        <div class="header-actions">
-          <button id="btn-missions-toggle" class="btn btn-action btn-action-accent" data-target-id="btn-missions-toggle" title="Open NCERT Learning Missions">
-            <span class="btn-icon" aria-hidden="true">📚</span>
-            Missions
-          </button>
-          <button id="btn-build-toggle" class="btn btn-action" data-target-id="btn-build-toggle" title="Toggle Build Mode with Valency Checking">
-            <span class="btn-icon" aria-hidden="true">🔨</span>
-            <span id="build-mode-label">Build Mode</span>
-          </button>
-          <button id="btn-rep-toggle" class="btn btn-action" data-target-id="btn-rep-toggle" title="Switch Ball-and-Stick / Space-Filling">
-            <span class="btn-icon" aria-hidden="true">⚪</span>
-            <span id="rep-label">Ball &amp; Stick</span>
-          </button>
-          <button id="btn-reset-structure" class="btn btn-action" data-target-id="btn-reset-structure" title="Reset Atom Positions">
-            <span class="btn-icon" aria-hidden="true">🔄</span>
-            Reset
-          </button>
-          <button id="toggle-debug" class="btn btn-action" data-target-id="toggle-debug" title="Toggle Telemetry Panel (D)">
-            <span class="btn-icon" aria-hidden="true">🛠️</span>
-            Debug
-          </button>
-        </div>
-      </header>
-
-      <!-- ── Chemistry HUD (Top-Left) ───────────────────── -->
-      <aside id="chem-hud" class="chem-hud" aria-label="Chemical Information">
-        <div class="hud-card">
-          <div class="hud-top-row">
-            <div>
-              <h2 id="hud-name" class="hud-mol-name">Water</h2>
-              <span id="hud-formula" class="hud-formula-badge">H₂O</span>
-            </div>
-            <div class="hud-badges">
-              <span id="hud-mass" class="hud-pill">18.02 g/mol</span>
-              <span id="hud-geometry" class="hud-pill hud-pill-accent">Bent 104.5°</span>
-            </div>
-          </div>
-
-          <div class="hud-ncert-row">
-            <span class="hud-ncert-icon" aria-hidden="true">📖</span>
-            <span id="hud-ncert" class="hud-ncert-text">Class 10 Chapter 4 / Class 11 Chapter 4</span>
-          </div>
-
-          <p id="hud-notes" class="hud-notes">
-            Bent geometry with an angle of 104.5° caused by repulsion from two oxygen lone pairs.
-          </p>
-
-          <!-- Real-time Live Measurements -->
-          <div class="hud-measurements">
-            <div id="hud-bond-readout" class="hud-measurement-box">
-              <span class="hud-label">Bond Length:</span> <span class="hud-value">—</span>
-            </div>
-            <div id="hud-angle-readout" class="hud-measurement-box">
-              <span class="hud-label">Bond Angle:</span> <span class="hud-value">—</span>
-            </div>
-          </div>
-
-          <!-- Potential Energy Well Curve -->
-          <div class="hud-energy-container">
-            <div class="energy-header">
-              <span class="energy-title">Potential Energy V(r)</span>
-              <span class="energy-sub">Harmonic Strain</span>
-            </div>
-            <canvas id="energy-canvas" width="250" height="110" aria-label="Energy vs stretch plot"></canvas>
-            <span class="energy-hint">Point with index finger &amp; pull atom to stretch chemical bonds</span>
-          </div>
-        </div>
-      </aside>
-
-      <!-- ── Stark Industries Holographic HUD Instructions & Start Interface ── -->
-      <div
-        id="permission-overlay"
-        class="overlay"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="perm-title"
-      >
-        <div class="overlay-card stark-hud-modal">
-          <div class="stark-corner stark-corner-tl"></div>
-          <div class="stark-corner stark-corner-tr"></div>
-          <div class="stark-corner stark-corner-bl"></div>
-          <div class="stark-corner stark-corner-br"></div>
-
-          <div class="stark-hud-header">
-            <div class="stark-sys-badge">
-              <span class="stark-pulse-dot"></span> STARK INDUSTRIES // HOLOGRAPHIC SYNTHESIZER v3.0
-            </div>
-            <div class="stark-arc-icon" aria-hidden="true">⚛️</div>
-            <h1 id="perm-title" class="stark-title">PROJECT: NEW ELEMENT SYNTHESIS</h1>
-            <p class="stark-subtitle">Holographic 3D Molecular Engine · Hand Gesture &amp; Desktop Control</p>
-          </div>
-
-          <!-- Tactical HUD Gesture & Control Matrix -->
-          <div class="stark-gesture-grid">
-            <div class="stark-gesture-card">
-              <div class="sg-badge">GESTURE 01</div>
-              <div class="sg-icon">✌️</div>
-              <div class="sg-title">Two Fingers / Relaxed Hand</div>
-              <div class="sg-role">HUD Navigation &amp; Dwell Click</div>
-              <p class="sg-desc">Steer your virtual cursor across screen. <strong>Hover over buttons for 0.5s</strong> to trigger click automatically.</p>
-            </div>
-
-            <div class="stark-gesture-card">
-              <div class="sg-badge">GESTURE 02</div>
-              <div class="sg-icon">☝️</div>
-              <div class="sg-title">Single Index Finger</div>
-              <div class="sg-role">3D Atom Pull &amp; Strain</div>
-              <p class="sg-desc">Point at any atom to grab &amp; pull in 3D. Stretch chemical bonds to measure potential energy curve. <em>(Never clicks buttons)</em>.</p>
-            </div>
-
-            <div class="stark-gesture-card">
-              <div class="sg-badge">TOOL 03</div>
-              <div class="sg-icon">🔨</div>
-              <div class="sg-title">Build Mode Synthesis</div>
-              <div class="sg-role">Valency &amp; Bond Forging</div>
-              <p class="sg-desc">Click <strong>+ C, + H, + O, + N</strong> to auto-attach elements, or click two atoms in sequence to toggle single, double &amp; triple bonds.</p>
-            </div>
-
-            <div class="stark-gesture-card">
-              <div class="sg-badge">FALLBACK 04</div>
-              <div class="sg-icon">🖱️</div>
-              <div class="sg-title">Desktop Mouse / Trackpad</div>
-              <div class="sg-role">Precision Point &amp; Click</div>
-              <p class="sg-desc">Standard controls: hover freely <strong>without auto-clicks</strong>, click to trigger buttons, click-drag to rotate/pull, scroll to zoom.</p>
-            </div>
-          </div>
-
-          <div class="stark-privacy-bar" role="note">
-            <span class="stark-lock-icon" aria-hidden="true">🔒</span>
-            <span>AIR-GAPPED SYSTEM: All hand-tracking computer vision runs 100% on-device in browser. Zero video frames uploaded.</span>
-          </div>
-
-          <div class="stark-cta-group">
-            <button id="start-btn" class="btn btn-stark-primary btn-large">
-              <span class="btn-icon" aria-hidden="true">⚡</span>
-              INITIALIZE HOLOGRAPHIC CAMERA &amp; START
-            </button>
-
-            <button id="skip-to-mouse" class="btn btn-stark-secondary btn-large">
-              <span class="btn-icon" aria-hidden="true">🖥️</span>
-              LAUNCH WITH DESKTOP CONTROLS (MOUSE / TOUCH)
-            </button>
-          </div>
-
-          <p id="start-error" class="overlay-error" hidden></p>
-          <div class="stark-hud-footer-hint">
-            <span>OPTICAL CALIBRATION: Position hand 30–60 cm from webcam in ambient light</span>
-          </div>
+<body>
+  <div id="app">
+    <!-- ── Top Header Navigation Bar ─────────────────── -->
+    <header class="app-header" role="banner">
+      <div class="header-brand">
+        <span class="brand-icon" aria-hidden="true">🧬</span>
+        <div class="brand-text">
+          <h1 class="brand-title">Molecule Hands</h1>
+          <span class="brand-badge">NCERT Classes 9–12</span>
         </div>
       </div>
 
-      <!-- ── Three.js Canvas ────────────────────────────── -->
-      <canvas id="main-canvas" aria-label="3D scene – use gestures or mouse to interact"></canvas>
-
-      <!-- ── Cursor Overlay (pointer-events:none) ───────── -->
-      <canvas id="cursor-canvas" aria-hidden="true"></canvas>
-
-      <!-- ── Status Toast ───────────────────────────────── -->
-      <div id="status-message" class="status-message" aria-live="polite" hidden></div>
-
-      <!-- ── Active Mission Card (Top-Right) ─────────────── -->
-      <div id="mission-card" class="mission-card" hidden aria-label="Active Mission Step"></div>
-
-      <!-- ── Mission Selector Modal ──────────────────────── -->
-      <div id="mission-selector-modal" class="mission-selector-modal" hidden role="dialog" aria-modal="true" aria-labelledby="modal-missions-title"></div>
-
-      <!-- ── Build Mode Palette (Bottom-Center) ──────────── -->
-      <div id="build-toolbar" class="build-toolbar" hidden aria-label="Build Mode Palette">
-        <div class="build-toolbar-card">
-          <div class="build-toolbar-header">
-            <span class="build-mode-title">🔨 Build Mode</span>
-            <span id="valency-status-badge" class="valency-status-badge valency-ok">Valency Check: Saturated ✓</span>
-          </div>
-          <div class="build-palette">
-            <button id="btn-add-c" class="btn btn-palette" data-target-id="btn-add-c" title="Add Carbon (Valency 4)">+ C</button>
-            <button id="btn-add-h" class="btn btn-palette" data-target-id="btn-add-h" title="Add Hydrogen (Valency 1)">+ H</button>
-            <button id="btn-add-o" class="btn btn-palette" data-target-id="btn-add-o" title="Add Oxygen (Valency 2)">+ O</button>
-            <button id="btn-add-n" class="btn btn-palette" data-target-id="btn-add-n" title="Add Nitrogen (Valency 3)">+ N</button>
-            <button id="btn-clear-build" class="btn btn-palette btn-palette-danger" data-target-id="btn-clear-build" title="Reset Canvas">🗑️ Clear</button>
-          </div>
-          <p class="build-hint">Click two atoms in sequence to connect or remove a bond. Overvalent atoms glow red!</p>
+      <!-- Molecule Carousel Selector -->
+      <div class="molecule-carousel" role="region" aria-label="Molecule Selector">
+        <button id="mol-prev" class="btn btn-icon btn-carousel" aria-label="Previous Molecule"
+          data-target-id="mol-prev">
+          ◀
+        </button>
+        <div id="mol-title" class="carousel-title" aria-live="polite">
+          Water (H₂O)
         </div>
+        <button id="mol-next" class="btn btn-icon btn-carousel" aria-label="Next Molecule" data-target-id="mol-next">
+          ▶
+        </button>
       </div>
 
-      <!-- ── Camera Preview ─────────────────────────────── -->
-      <div id="camera-preview" class="camera-preview" hidden aria-label="Hand camera preview">
-        <div class="preview-header">
-          <span class="preview-label">Hand Camera</span>
-          <span id="tracking-badge" class="tracking-badge tracking-none" aria-live="polite">No Hand</span>
+      <!-- Quick Action Bar -->
+      <div class="header-actions">
+        <button id="btn-missions-toggle" class="btn btn-action btn-action-accent" data-target-id="btn-missions-toggle"
+          title="Open NCERT Learning Missions">
+          <span class="btn-icon" aria-hidden="true">📚</span>
+          Missions
+        </button>
+        <button id="btn-build-toggle" class="btn btn-action" data-target-id="btn-build-toggle"
+          title="Toggle Build Mode with Valency Checking">
+          <span class="btn-icon" aria-hidden="true">🔨</span>
+          <span id="build-mode-label">Build Mode</span>
+        </button>
+        <button id="btn-rep-toggle" class="btn btn-action" data-target-id="btn-rep-toggle"
+          title="Switch Ball-and-Stick / Space-Filling">
+          <span class="btn-icon" aria-hidden="true">⚪</span>
+          <span id="rep-label">Ball &amp; Stick</span>
+        </button>
+        <button id="btn-reset-structure" class="btn btn-action" data-target-id="btn-reset-structure"
+          title="Reset Atom Positions">
+          <span class="btn-icon" aria-hidden="true">🔄</span>
+          Reset
+        </button>
+        <button id="toggle-debug" class="btn btn-action" data-target-id="toggle-debug"
+          title="Toggle Telemetry Panel (D)">
+          <span class="btn-icon" aria-hidden="true">🛠️</span>
+          Debug
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Chemistry HUD (Top-Left) ───────────────────── -->
+    <aside id="chem-hud" class="chem-hud" aria-label="Chemical Information">
+      <div class="hud-card">
+        <div class="hud-top-row">
+          <div>
+            <h2 id="hud-name" class="hud-mol-name">Water</h2>
+            <span id="hud-formula" class="hud-formula-badge">H₂O</span>
+          </div>
+          <div class="hud-badges">
+            <span id="hud-mass" class="hud-pill">18.02 g/mol</span>
+            <span id="hud-geometry" class="hud-pill hud-pill-accent">Bent 104.5°</span>
+          </div>
         </div>
-        <div class="preview-video-container">
-          <video id="camera-video" autoplay playsinline muted aria-hidden="true"></video>
-          <canvas id="skeleton-canvas" aria-hidden="true"></canvas>
+
+        <div class="hud-ncert-row">
+          <span class="hud-ncert-icon" aria-hidden="true">📖</span>
+          <span id="hud-ncert" class="hud-ncert-text">Class 10 Chapter 4 / Class 11 Chapter 4</span>
+        </div>
+
+        <p id="hud-notes" class="hud-notes">
+          Bent geometry with an angle of 104.5° caused by repulsion from two oxygen lone pairs.
+        </p>
+
+        <!-- Real-time Live Measurements -->
+        <div class="hud-measurements">
+          <div id="hud-bond-readout" class="hud-measurement-box">
+            <span class="hud-label">Bond Length:</span> <span class="hud-value">—</span>
+          </div>
+          <div id="hud-angle-readout" class="hud-measurement-box">
+            <span class="hud-label">Bond Angle:</span> <span class="hud-value">—</span>
+          </div>
+        </div>
+
+        <!-- Potential Energy Well Curve -->
+        <div class="hud-energy-container">
+          <div class="energy-header">
+            <span class="energy-title">Potential Energy V(r)</span>
+            <span class="energy-sub">Harmonic Strain</span>
+          </div>
+          <canvas id="energy-canvas" width="250" height="110" aria-label="Energy vs stretch plot"></canvas>
+          <span class="energy-hint">Point with index finger &amp; pull atom to stretch chemical bonds</span>
         </div>
       </div>
+    </aside>
 
-      <!-- ── Debug Panel ────────────────────────────────── -->
-      <div id="debug-panel" class="debug-panel" hidden aria-label="Debug panel">
-        <div class="debug-header">
-          <span>Debug Panel</span>
-          <button id="debug-close" class="debug-close" aria-label="Close debug panel">✕</button>
+    <!-- ── Stark Industries Holographic HUD Instructions & Start Interface ── -->
+    <div id="permission-overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="perm-title">
+      <div class="overlay-card stark-hud-modal">
+        <div class="stark-corner stark-corner-tl"></div>
+        <div class="stark-corner stark-corner-tr"></div>
+        <div class="stark-corner stark-corner-bl"></div>
+        <div class="stark-corner stark-corner-br"></div>
+
+        <div class="stark-hud-header">
+          <div class="stark-sys-badge">
+            <span class="stark-pulse-dot"></span> Vrushal Patil Creations v3.0
+          </div>
+          <div class="stark-arc-icon" aria-hidden="true">⚛️</div>
+          <h1 id="perm-title" class="stark-title">PROJECT: Molecule Hands</h1>
+          <p class="stark-subtitle">Holographic 3D Molecular Engine · Hand Gesture &amp; Desktop Control</p>
         </div>
 
-        <div class="debug-grid">
-          <div class="debug-group">
-            <div class="debug-label">Render FPS</div>
-            <div id="dbg-fps" class="debug-value">—</div>
+        <!-- Tactical HUD Gesture & Control Matrix -->
+        <div class="stark-gesture-grid">
+          <div class="stark-gesture-card">
+            <div class="sg-badge">GESTURE 01</div>
+            <div class="sg-icon">✌️</div>
+            <div class="sg-title">Two Fingers / Relaxed Hand</div>
+            <div class="sg-role">HUD Navigation &amp; Dwell Click</div>
+            <p class="sg-desc">Steer your virtual cursor across screen. <strong>Hover over buttons for 0.5s</strong> to
+              trigger click automatically.</p>
           </div>
-          <div class="debug-group">
-            <div class="debug-label">Inference ms</div>
-            <div id="dbg-inference" class="debug-value">—</div>
-          </div>
-          <div class="debug-group">
-            <div class="debug-label">Hand State</div>
-            <div id="dbg-state" class="debug-value">—</div>
-          </div>
-          <div class="debug-group">
-            <div class="debug-label">Confidence</div>
-            <div id="dbg-conf" class="debug-value">—</div>
-          </div>
-        </div>
 
-        <!-- Closed Fist ratio live bar -->
-        <div class="debug-section">
-          <div class="debug-label">Closed Fist Ratio (Grip) <span id="dbg-fist-val" class="debug-bar-val">—</span></div>
-          <div class="debug-bar-container">
-            <div id="dbg-fist-bar" class="debug-bar" style="--fill:0%"></div>
+          <div class="stark-gesture-card">
+            <div class="sg-badge">GESTURE 02</div>
+            <div class="sg-icon">☝️</div>
+            <div class="sg-title">Single Index Finger</div>
+            <div class="sg-role">3D Atom Pull &amp; Strain</div>
+            <p class="sg-desc">Point at any atom to grab &amp; pull in 3D. Stretch chemical bonds to measure potential
+              energy curve. <em>(Never clicks buttons)</em>.</p>
           </div>
-        </div>
 
-        <!-- Pinch ratio live bar -->
-        <div class="debug-section">
-          <div class="debug-label">Pinch Ratio (Fallback) <span id="dbg-pinch-val" class="debug-bar-val">—</span></div>
-          <div class="debug-bar-container">
-            <div id="dbg-pinch-bar" class="debug-bar" style="--fill:0%"></div>
+          <div class="stark-gesture-card">
+            <div class="sg-badge">TOOL 03</div>
+            <div class="sg-icon">🔨</div>
+            <div class="sg-title">Build Mode Synthesis</div>
+            <div class="sg-role">Valency &amp; Bond Forging</div>
+            <p class="sg-desc">Click <strong>+ C, + H, + O, + N</strong> to auto-attach elements, or click two atoms in
+              sequence to toggle single, double &amp; triple bonds.</p>
           </div>
-        </div>
 
-        <!-- 1€ Filter sliders -->
-        <div class="debug-section">
-          <div class="debug-label">1€ Filter</div>
-          <div class="debug-controls">
-            <label class="debug-control-label" for="dbg-minCutoff">
-              minCutoff <span id="minCutoff-val">1.00</span>
-            </label>
-            <input id="dbg-minCutoff" type="range" min="0.1" max="5" step="0.05" value="1.0" class="debug-slider" />
-            <label class="debug-control-label" for="dbg-beta">
-              beta <span id="beta-val">0.007</span>
-            </label>
-            <input id="dbg-beta" type="range" min="0.001" max="0.05" step="0.001" value="0.007" class="debug-slider" />
-          </div>
-        </div>
-
-        <!-- Grip threshold sliders -->
-        <div class="debug-section">
-          <div class="debug-label">Grip Thresholds (Fist / Pinch)</div>
-          <div class="debug-controls">
-            <label class="debug-control-label" for="dbg-pinchOn">
-              pinchOn <span id="pinchOn-val">0.30</span>
-            </label>
-            <input id="dbg-pinchOn" type="range" min="0.05" max="0.6" step="0.01" value="0.30" class="debug-slider" />
-            <label class="debug-control-label" for="dbg-pinchOff">
-              pinchOff <span id="dbg-pinchOff">0.45</span>
-            </label>
-            <input id="dbg-pinchOff" type="range" min="0.1" max="0.8" step="0.01" value="0.45" class="debug-slider" />
+          <div class="stark-gesture-card">
+            <div class="sg-badge">FALLBACK 04</div>
+            <div class="sg-icon">🖱️</div>
+            <div class="sg-title">Desktop Mouse / Trackpad</div>
+            <div class="sg-role">Precision Point &amp; Click</div>
+            <p class="sg-desc">Standard controls: hover freely <strong>without auto-clicks</strong>, click to trigger
+              buttons, click-drag to rotate/pull, scroll to zoom.</p>
           </div>
         </div>
 
-        <!-- Event log -->
-        <div class="debug-section">
-          <div class="debug-label">Event Log</div>
-          <div id="event-log" class="event-log" aria-live="polite"></div>
+        <div class="stark-privacy-bar" role="note">
+          <span class="stark-lock-icon" aria-hidden="true">🔒</span>
+          <span>AIR-GAPPED SYSTEM: All hand-tracking computer vision runs 100% on-device in browser. Zero video frames
+            uploaded.</span>
+        </div>
+
+        <div class="stark-cta-group">
+          <button id="start-btn" class="btn btn-stark-primary btn-large">
+            <span class="btn-icon" aria-hidden="true">⚡</span>
+            INITIALIZE HOLOGRAPHIC CAMERA &amp; START
+          </button>
+
+          <button id="skip-to-mouse" class="btn btn-stark-secondary btn-large">
+            <span class="btn-icon" aria-hidden="true">🖥️</span>
+            LAUNCH WITH DESKTOP CONTROLS (MOUSE / TOUCH)
+          </button>
+        </div>
+
+        <p id="start-error" class="overlay-error" hidden></p>
+        <div class="stark-hud-footer-hint">
+          <span>OPTICAL CALIBRATION: Position hand 30–60 cm from webcam in ambient light</span>
         </div>
       </div>
     </div>
 
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+    <!-- ── Three.js Canvas ────────────────────────────── -->
+    <canvas id="main-canvas" aria-label="3D scene – use gestures or mouse to interact"></canvas>
+
+    <!-- ── Cursor Overlay (pointer-events:none) ───────── -->
+    <canvas id="cursor-canvas" aria-hidden="true"></canvas>
+
+    <!-- ── Status Toast ───────────────────────────────── -->
+    <div id="status-message" class="status-message" aria-live="polite" hidden></div>
+
+    <!-- ── Active Mission Card (Top-Right) ─────────────── -->
+    <div id="mission-card" class="mission-card" hidden aria-label="Active Mission Step"></div>
+
+    <!-- ── Mission Selector Modal ──────────────────────── -->
+    <div id="mission-selector-modal" class="mission-selector-modal" hidden role="dialog" aria-modal="true"
+      aria-labelledby="modal-missions-title"></div>
+
+    <!-- ── Build Mode Palette (Bottom-Center) ──────────── -->
+    <div id="build-toolbar" class="build-toolbar" hidden aria-label="Build Mode Palette">
+      <div class="build-toolbar-card">
+        <div class="build-toolbar-header">
+          <span class="build-mode-title">🔨 Build Mode</span>
+          <span id="valency-status-badge" class="valency-status-badge valency-ok">Valency Check: Saturated ✓</span>
+        </div>
+        <div class="build-palette">
+          <button id="btn-add-c" class="btn btn-palette" data-target-id="btn-add-c" title="Add Carbon (Valency 4)">+
+            C</button>
+          <button id="btn-add-h" class="btn btn-palette" data-target-id="btn-add-h" title="Add Hydrogen (Valency 1)">+
+            H</button>
+          <button id="btn-add-o" class="btn btn-palette" data-target-id="btn-add-o" title="Add Oxygen (Valency 2)">+
+            O</button>
+          <button id="btn-add-n" class="btn btn-palette" data-target-id="btn-add-n" title="Add Nitrogen (Valency 3)">+
+            N</button>
+          <button id="btn-clear-build" class="btn btn-palette btn-palette-danger" data-target-id="btn-clear-build"
+            title="Reset Canvas">🗑️ Clear</button>
+        </div>
+        <p class="build-hint">Click two atoms in sequence to connect or remove a bond. Overvalent atoms glow red!</p>
+      </div>
+    </div>
+
+    <!-- ── Camera Preview ─────────────────────────────── -->
+    <div id="camera-preview" class="camera-preview" hidden aria-label="Hand camera preview">
+      <div class="preview-header">
+        <span class="preview-label">Hand Camera</span>
+        <span id="tracking-badge" class="tracking-badge tracking-none" aria-live="polite">No Hand</span>
+      </div>
+      <div class="preview-video-container">
+        <video id="camera-video" autoplay playsinline muted aria-hidden="true"></video>
+        <canvas id="skeleton-canvas" aria-hidden="true"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Debug Panel ────────────────────────────────── -->
+    <div id="debug-panel" class="debug-panel" hidden aria-label="Debug panel">
+      <div class="debug-header">
+        <span>Debug Panel</span>
+        <button id="debug-close" class="debug-close" aria-label="Close debug panel">✕</button>
+      </div>
+
+      <div class="debug-grid">
+        <div class="debug-group">
+          <div class="debug-label">Render FPS</div>
+          <div id="dbg-fps" class="debug-value">—</div>
+        </div>
+        <div class="debug-group">
+          <div class="debug-label">Inference ms</div>
+          <div id="dbg-inference" class="debug-value">—</div>
+        </div>
+        <div class="debug-group">
+          <div class="debug-label">Hand State</div>
+          <div id="dbg-state" class="debug-value">—</div>
+        </div>
+        <div class="debug-group">
+          <div class="debug-label">Confidence</div>
+          <div id="dbg-conf" class="debug-value">—</div>
+        </div>
+      </div>
+
+      <!-- Closed Fist ratio live bar -->
+      <div class="debug-section">
+        <div class="debug-label">Closed Fist Ratio (Grip) <span id="dbg-fist-val" class="debug-bar-val">—</span></div>
+        <div class="debug-bar-container">
+          <div id="dbg-fist-bar" class="debug-bar" style="--fill:0%"></div>
+        </div>
+      </div>
+
+      <!-- Pinch ratio live bar -->
+      <div class="debug-section">
+        <div class="debug-label">Pinch Ratio (Fallback) <span id="dbg-pinch-val" class="debug-bar-val">—</span></div>
+        <div class="debug-bar-container">
+          <div id="dbg-pinch-bar" class="debug-bar" style="--fill:0%"></div>
+        </div>
+      </div>
+
+      <!-- 1€ Filter sliders -->
+      <div class="debug-section">
+        <div class="debug-label">1€ Filter</div>
+        <div class="debug-controls">
+          <label class="debug-control-label" for="dbg-minCutoff">
+            minCutoff <span id="minCutoff-val">1.00</span>
+          </label>
+          <input id="dbg-minCutoff" type="range" min="0.1" max="5" step="0.05" value="1.0" class="debug-slider" />
+          <label class="debug-control-label" for="dbg-beta">
+            beta <span id="beta-val">0.007</span>
+          </label>
+          <input id="dbg-beta" type="range" min="0.001" max="0.05" step="0.001" value="0.007" class="debug-slider" />
+        </div>
+      </div>
+
+      <!-- Grip threshold sliders -->
+      <div class="debug-section">
+        <div class="debug-label">Grip Thresholds (Fist / Pinch)</div>
+        <div class="debug-controls">
+          <label class="debug-control-label" for="dbg-pinchOn">
+            pinchOn <span id="pinchOn-val">0.30</span>
+          </label>
+          <input id="dbg-pinchOn" type="range" min="0.05" max="0.6" step="0.01" value="0.30" class="debug-slider" />
+          <label class="debug-control-label" for="dbg-pinchOff">
+            pinchOff <span id="dbg-pinchOff">0.45</span>
+          </label>
+          <input id="dbg-pinchOff" type="range" min="0.1" max="0.8" step="0.01" value="0.45" class="debug-slider" />
+        </div>
+      </div>
+
+      <!-- Event log -->
+      <div class="debug-section">
+        <div class="debug-label">Event Log</div>
+        <div id="event-log" class="event-log" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>
